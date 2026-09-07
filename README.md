@@ -1,153 +1,312 @@
 # Figma Naming MCP
 
-Figma에서 **컴포넌트 / 프레임을 선택하면 네이밍 규칙에 맞게 검사하고 변경**해 주는 MCP 서버입니다.
-Claude Code에서 `checkNaming → previewRename → applyRename` 3단계로 안전하게 이름을 정리합니다.
+Figma 디자인 파일의 네이밍 규칙을 검사하고 정리하기 위한 MCP입니다.
+
+디자이너가 반복적으로 확인하던 **Frame · Component · Property · Variant** 네이밍을
+Claude Code에서 검사하고, 변경 후보를 확인한 뒤 적용할 수 있도록 만들었습니다.
+`checkNaming → previewRename → applyRename` 3단계로 안전하게 이름을 정리합니다.
 
 ## 실행 화면
 
 ![figma-naming-mcp 실행 캡처](docs/demo.svg)
 
-## 네이밍 규칙 (최종)
+---
+
+## Naming Rules
 
 | 대상 | 규칙 | 예시 |
 | --- | --- | --- |
-| 컴포넌트 / 컴포넌트 세트 / 프레임명 | **PascalCase** (복합어 분리) | `bottomsheet` → `BottomSheet`, `sheet_top` → `SheetTop` |
-| 속성명(Property) | **camelCase** | `Show icon` → `showIcon`, `Sub Text` → `subText` |
-| Variant 문자열 값 | **소문자 시작** | `Selected` → `selected`, `Ads` → `ads` |
-| Boolean 값 (True/False) | **변경 안 함** | Figma 내장 타입이라 편집 불가·규칙 대상 아님 |
+| Frame | **PascalCase** | `bottom_sheet` → `BottomSheet` |
+| Component | **PascalCase** | `sheet_top` → `SheetTop` |
+| Property | **camelCase** | `Show icon` → `showIcon` |
+| Variant Value | **소문자 시작** | `Selected` → `selected` |
+| Boolean Value | **변경하지 않음** | `True / False` 유지 |
 
-- 복합어 분리는 사전(`DEFAULT_DICTIONARY`: bottom, sheet, full, top, ads, box, button …)으로 처리하며, 규칙 인자로 확장할 수 있습니다.
+복합어의 경우 단순히 첫 글자만 대문자로 바꾸지 않고 **의미 단위로 분리**합니다.
+사전(`DEFAULT_DICTIONARY`: bottom, sheet, full, top, ads, box, button …)으로 처리하며 규칙 인자로 확장할 수 있습니다.
 
-## 소개
+예: `bottomsheet` → `BottomSheet`
 
-실무에서 반복되는 Figma 네이밍 정리 작업을 자동화하기 위해 직접 MCP를 제작했다.
-결정적(deterministic)인 규칙 엔진이라 같은 입력이면 항상 같은 결과를 내고, 검사 → 미리보기 → 승인 후 적용의 3단계로 안전하게 이름을 바꾼다.
+---
 
-## 동작 구조
+## 주요 기능
 
-MCP 서버는 다른 MCP 서버를 직접 호출할 수 없기 때문에, **Claude가 오케스트레이터** 역할을 한다.
-이 서버는 Figma를 직접 건드리지 않고 오직 "이름 규칙"만 판단한다.
+### 1. checkNaming
 
+현재 네이밍이 규칙에 맞는지 검사합니다.
+
+```text
+Component
+sheet_top → SheetTop
+
+Property
+Show icon → showIcon
+Type → type
+
+Variant value
+Selected → selected
 ```
-Claude ─(공식 Figma MCP)→ 선택된 노드 데이터 읽기
-      └→ figma-naming-mcp: checkNaming / previewRename   (규칙 검사·제안)
-      └(사용자 승인)→ figma-naming-mcp: applyRename        (변경 계획 확정)
-      └(공식 Figma MCP)→ 실제 이름 반영 + Before/After 캡처
+
+### 2. previewRename
+
+실제로 변경하기 전에 변경 예정 내용(`before → after`)과 실행용 `operations`를 확인합니다.
+이 단계에서는 **Figma의 이름을 변경하지 않습니다.**
+
+```text
+3 naming issues found
+
+sheet_top → SheetTop
+Show icon → showIcon
+Selected → selected
 ```
+
+### 3. applyRename
+
+확인한 변경사항을 실제로 적용합니다. 실수로 이름이 바뀌지 않도록 **검사 → 미리보기 → 사용자 확인 → 적용** 순서로 구성했습니다.
+
+```text
+checkNaming
+↓
+previewRename
+↓
+사용자 확인
+↓
+applyRename
+```
+
+`operations`는 3종류이며, 클라이언트(Claude)가 공식 Figma MCP의 `use_figma`로 실행합니다.
+
+| operation | 동작 |
+| --- | --- |
+| `renameNode` | `node.name = to` |
+| `renameProperty` | `componentSet.editComponentProperty(from, { name: to })` |
+| `renameVariantValue` | variant 자식 컴포넌트의 `name`을 `prop=value`에서 값만 교체 |
+
+> 이 MCP는 Figma를 직접 건드리지 않고 "이름 규칙"만 판단하는 **결정적(deterministic) 규칙 엔진**입니다.
+> 실제 Figma 읽기 / 쓰기 / 캡처는 **공식 Figma MCP**가 담당하며, Claude가 두 MCP를 오케스트레이션합니다.
+
+---
+
+# Installation
 
 ## 사전 준비물
 
 - **Node.js 18+** (`node --version`)
 - **Claude Code** (CLI 또는 데스크톱 앱)
-- **공식 Figma MCP** 연결 — 이 서버는 Figma를 직접 건드리지 않고 "이름 규칙"만 판단하므로, 실제 Figma 읽기/쓰기/캡처를 담당하는 공식 Figma MCP가 함께 연결돼 있어야 합니다. ([Figma Dev Mode MCP](https://help.figma.com/hc/en-us/articles/32132100833559))
+- **공식 Figma MCP** 연결 — 실제 Figma 읽기/쓰기/캡처를 담당하므로 함께 연결돼 있어야 합니다.
 
-## 설치 방법
+## 1. Repository Clone
+
+Terminal을 열고 아래 명령어를 실행합니다.
 
 ```bash
-# 1. 클론
-git clone https://github.com/<USERNAME>/figma-naming-mcp.git
-cd figma-naming-mcp
+git clone https://github.com/OmongP/Fimga-naming.git
+```
 
-# 2. 의존성 설치
+프로젝트 폴더로 이동합니다.
+
+```bash
+cd Fimga-naming
+```
+
+## 2. Package 설치
+
+```bash
 npm install
+```
 
-# 3. 테스트 (규칙 엔진 검증 — 11개 통과 확인)
+설치가 완료되면 MCP 실행에 필요한 패키지가 준비됩니다.
+
+## 3. 테스트 (규칙 엔진 검증)
+
+```bash
 npm test
+```
 
-# 4. Claude Code에 로컬 MCP 등록 (현재 폴더 기준 절대경로)
+## 4. Claude Code에 MCP 등록
+
+프로젝트 경로를 확인합니다.
+
+```bash
+pwd
+```
+
+예:
+
+```text
+/Users/username/Documents/Fimga-naming
+```
+
+Claude Code에 MCP를 등록합니다. (현재 폴더 기준 절대경로로 등록하면 편리합니다.)
+
+```bash
 claude mcp add figma-naming -- node "$(pwd)/index.js"
 ```
 
-> `<USERNAME>` 은 이 저장소를 올린 GitHub 계정으로 바꾸세요.
+> `/Users/username/...` 부분은 자신의 실제 프로젝트 경로로 변경해주세요.
 
-등록 후 `/mcp` 로 `figma-naming` 과 공식 Figma MCP가 모두 연결됐는지 확인합니다.
+## 5. MCP 연결 확인
 
-## Claude Code에서 사용법
+Claude Code를 실행합니다.
 
-1. Figma 데스크톱 앱에서 정리할 **컴포넌트 / 프레임을 선택**합니다.
-2. Claude Code에 이렇게 요청합니다:
-
-   > "선택한 컴포넌트 네이밍을 규칙에 맞게 검사하고 정리해줘"
-
-3. Claude가 공식 Figma MCP로 선택을 읽어 `checkNaming` → `previewRename` 결과(`before → after`)를 보여줍니다.
-4. 확인 후 승인하면 `applyRename` → 공식 Figma MCP로 **실제 이름을 변경**하고 Before/After를 캡처합니다.
-   (이름 변경이라 Figma에서 `Cmd+Z`로 되돌릴 수 있습니다.)
-
-## 제공 도구
-
-| 도구 | 설명 |
-| --- | --- |
-| `checkNaming` | 선택된 Frame / Component / Property / Variant 값 네이밍을 규칙 대비 검사하고 위반 항목 리포트 |
-| `previewRename` | 변경 예정 목록(`before → after`)과 실행용 `operations` 출력 (Figma 미변경) |
-| `applyRename` | 승인된 변경안을 Figma 실행용 매니페스트로 확정 |
-| `getConvention` | 현재 적용 중인 기본 컨벤션 반환 |
-
-`operations`는 3종류입니다 — `renameNode`(이름), `renameProperty`(속성명), `renameVariantValue`(variant 값). 클라이언트(Claude)가 이를 공식 Figma MCP의 `use_figma`로 실행합니다:
-
-- `renameNode` → `node.name = to`
-- `renameProperty` → `componentSet.editComponentProperty(from, { name: to })`
-- `renameVariantValue` → variant 자식 컴포넌트의 `name`을 `prop=value`에서 값만 교체
-
-### 입력 형식
-
-`nodes` 는 공식 Figma MCP로 읽은 선택 노드 배열이다.
-
-```json
-{
-  "nodes": [
-    {
-      "id": "1:23",
-      "name": "sheet_top",
-      "type": "COMPONENT_SET",
-      "properties": [
-        { "name": "Sub Text#21:0", "type": "TEXT" },
-        { "name": "Show icon#10:0", "type": "BOOLEAN" },
-        { "name": "Type", "type": "VARIANT", "values": ["basic", "Ads", "sentence"] }
-      ]
-    },
-    { "id": "1:24", "name": "Frame 123", "type": "FRAME" }
-  ],
-  "names": { "1:24": "VehicleSummary" }
-}
+```bash
+claude
 ```
 
-- `properties[].type`로 `BOOLEAN`을 알려주면 값(True/False)은 건드리지 않고, `VARIANT`의 `values`만 소문자 시작으로 정규화합니다.
+Claude Code에서 `/mcp` 를 입력했을 때 아래처럼 표시되면 연결 완료입니다.
+공식 Figma MCP도 함께 연결됐는지 확인하세요.
 
-- `Frame 123` 같은 **Figma 자동 이름**은 문자열만으로 의미 있는 이름을 만들 수 없다.
-  이런 노드는 `needsInput` 으로 표시되고, Claude가 Figma 캡처로 내용을 파악해 `names` 로
-  의미 있는 이름을 넣어 주면 규칙(PascalCase)으로 정규화한다.
-
-## 적용 사례
-
-실제 디자인 파일에서 Frame / Component / Property 네이밍을 검사하고 PascalCase / camelCase 규칙에 맞게 변경.
-
-**결과 화면 예시**
-
+```text
+figma-naming
+connected
 ```
-Naming issues found
+
+---
+
+# Usage
+
+Claude Code에서 정리할 **컴포넌트 / 프레임을 Figma에서 선택**한 뒤 아래와 같이 요청할 수 있습니다.
+
+### 네이밍 검사
+
+```text
+이 Figma 컴포넌트의 네이밍 규칙을 검사해줘.
+figma-naming MCP의 checkNaming을 사용해줘.
+```
+
+### 변경 예정 확인
+
+```text
+네이밍 변경 예정 결과를 보여줘.
+아직 실제 이름은 수정하지 마.
+```
+
+### 실제 적용
+
+```text
+확인했어.
+위 네이밍 변경사항을 적용해줘.
+```
+
+이름 변경이라 Figma에서 `Cmd+Z`로 되돌릴 수 있습니다.
+
+---
+
+# Example
+
+### Before
+
+```text
+Frame
+bottom_sheet
 
 Component
-sheet_top → SheetTop
+sheet_top
 
 Property
-Sub Text#21:0 → subText#21:0
-Show icon#10:0 → showIcon#10:0
-Type → type
+Show icon
+Sub Text
 
-Variant value
-Ads → ads
-
-5 changes ready
+Variant
+Selected
 ```
 
-## 컨벤션 커스터마이즈
+### After
 
-모든 도구는 `convention` 인자로 규칙을 덮어쓸 수 있다.
+```text
+Frame
+BottomSheet
 
-```json
-{ "convention": { "component": "PascalCase", "frame": "PascalCase", "property": "camelCase" } }
+Component
+SheetTop
+
+Property
+showIcon
+subText
+
+Variant
+selected
 ```
 
-## 라이선스
+Boolean 값인 `True`, `False`는 변경하지 않습니다.
 
-ISC
+---
+
+# Why I Made This
+
+Figma MCP를 활용해 디자인을 코드로 구현하는 과정에서, AI와 개발자가 디자인 구조를 이해하려면
+디자인 자체뿐 아니라 **일관된 네이밍**도 중요하다는 점을 확인했습니다.
+
+하지만 실제 업무에서는 작업 과정에서 네이밍 규칙이 깨지거나, 작업자마다 다른 방식으로 이름을 작성하는 경우가 있습니다.
+
+이 MCP는 사람이 반복적으로 확인하던 네이밍 작업을 자동으로 검사하고, 동일한 규칙으로 정리하기 위해 만들었습니다.
+특히 디자인 시스템을 사용하는 팀에서 **디자이너 · 개발자 · AI가 동일한 구조를 이해**하는 데 도움이 되는 것을 목표로 합니다.
+
+---
+
+# Recommended Workflow
+
+```text
+Figma Design
+      ↓
+Figma MCP        (선택 노드 읽기)
+      ↓
+Claude Code      (오케스트레이터)
+      ↓
+Figma Naming MCP (규칙 검사·제안)
+      ↓
+Naming Check → Preview → Apply
+```
+
+---
+
+# Development
+
+현재 적용된 주요 규칙:
+
+```text
+Component / Frame     → PascalCase (복합어 분리)
+Property              → camelCase
+Variant string value  → lowercase first letter
+Boolean value         → unchanged
+```
+
+프로젝트 구조:
+
+```text
+index.js              MCP 서버 (stdio, 도구 4개)
+src/conventions.js    케이스 변환·검증, 복합어 분리, 기본 이름 감지
+src/naming.js         검사·리네임 계획·결과 화면 포맷
+test/naming.test.js   규칙 엔진 테스트 (11개)
+examples/demo.mjs     checkNaming→previewRename→applyRename 실행 데모
+docs/demo.svg         실행 화면 캡처
+```
+
+Test:
+
+```bash
+npm test
+```
+
+End-to-end 데모 실행:
+
+```bash
+node examples/demo.mjs
+```
+
+---
+
+# Future
+
+- 팀별 Naming Dictionary
+- 디자인시스템 컴포넌트 규칙 검사
+- 잘못된 Variant 구조 탐지
+- Figma Layer Naming 검사
+- 사내 디자인시스템 전용 MCP
+- npm 또는 Remote MCP 형태의 팀 배포
+
+---
+
+## License
+
+See [`LICENSE`](LICENSE). (ISC)
