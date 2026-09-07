@@ -1,0 +1,21 @@
+{
+  "name": "figma-naming-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that checks and fixes Figma component/frame/property naming against a convention (component/frame: PascalCase, property: camelCase).",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "figma-naming-mcp": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "keywords": ["figma", "mcp", "naming", "design-system"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
+  }
+}

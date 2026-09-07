@@ -1,0 +1,87 @@
+<title>figma-naming-mcp demo</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: #0d1117;
+    padding: 28px;
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    display: inline-block;
+  }
+  .win {
+    width: 720px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px;
+    background: #21262d;
+    border-bottom: 1px solid #30363d;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .r { background: #ff5f56; } .y { background: #ffbd2e; } .g { background: #27c93f; }
+  .bar .t { margin-left: 8px; color: #8b949e; font-size: 12.5px; }
+  .body { padding: 18px 20px 22px; font-size: 13px; line-height: 1.62; color: #c9d1d9; }
+  .cmd { color: #79c0ff; }
+  .cmd .p { color: #3fb950; }
+  .step {
+    margin: 18px 0 6px;
+    padding: 5px 10px;
+    background: #1f6feb22;
+    border-left: 3px solid #58a6ff;
+    border-radius: 4px;
+    color: #58a6ff; font-weight: 600; font-size: 12.5px;
+  }
+  .h { color: #f0883e; font-weight: 600; }
+  .grp { color: #8b949e; font-weight: 600; margin-top: 8px; }
+  .line { white-space: pre; }
+  .arw { color: #58a6ff; }
+  .to { color: #7ee787; }
+  .from { color: #c9d1d9; }
+  .hash { color: #6e7681; }
+  .foot { color: #d29922; }
+  .dim { color: #6e7681; }
+  .ok { color: #3fb950; font-weight: 600; }
+  .bullet { color: #6e7681; }
+</style>
+<div class="win">
+  <div class="bar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="t">figma-naming-mcp — checkNaming → previewRename → applyRename</span>
+  </div>
+  <div class="body">
+<div class="cmd"><span class="p">›</span> select <span class="from">SheetTop</span> in Figma  ·  read via Figma MCP  ·  run figma-naming-mcp</div>
+
+<div class="step">1) checkNaming — 규칙 위반 검사</div>
+<div class="h">Naming issues found</div>
+<div class="grp">Component</div>
+<div class="line"><span class="from">sheet_top</span> <span class="arw">→</span> <span class="to">SheetTop</span></div>
+<div class="grp">Property</div>
+<div class="line"><span class="from">Sub Text</span><span class="hash">#21696:0</span> <span class="arw">→</span> <span class="to">subText</span><span class="hash">#21696:0</span></div>
+<div class="line"><span class="from">Scroll</span><span class="hash">#26591:0</span> <span class="arw">→</span> <span class="to">scroll</span><span class="hash">#26591:0</span></div>
+<div class="line"><span class="from">Show icon</span><span class="hash">#105792:0</span> <span class="arw">→</span> <span class="to">showIcon</span><span class="hash">#105792:0</span></div>
+<div class="line"><span class="from">Type</span> <span class="arw">→</span> <span class="to">type</span></div>
+<div class="grp">Variant value</div>
+<div class="line"><span class="from">Ads</span> <span class="arw">→</span> <span class="to">ads</span></div>
+<div class="foot" style="margin-top:8px">6 changes ready</div>
+
+<div class="step">2) previewRename — before → after 계획 (Figma 미변경)</div>
+<div class="line"><span class="dim">operations:</span></div>
+<div class="line"><span class="bullet">•</span> renameNode          <span class="from">sheet_top</span> <span class="arw">→</span> <span class="to">SheetTop</span></div>
+<div class="line"><span class="bullet">•</span> renameProperty       <span class="from">Show icon</span> <span class="arw">→</span> <span class="to">showIcon</span></div>
+<div class="line"><span class="bullet">•</span> renameProperty       <span class="from">Type</span> <span class="arw">→</span> <span class="to">type</span></div>
+<div class="line"><span class="bullet">•</span> renameVariantValue   type <span class="from">Ads</span> <span class="arw">→</span> <span class="to">ads</span></div>
+<div class="line dim">  … + subText, scroll (6 total)</div>
+
+<div class="step">3) applyRename — 승인 후 Figma 반영 → Before/After 캡처</div>
+<div class="line"><span class="ok">✓ Approved 6 operations</span> · executed via Figma MCP (use_figma)</div>
+<div class="line"><span class="bullet">•</span> 13120:50612  name <span class="arw">→</span> <span class="to">"SheetTop"</span></div>
+<div class="line"><span class="bullet">•</span> 13120:50612  property <span class="from">"Show icon"</span> <span class="arw">→</span> <span class="to">"showIcon"</span></div>
+<div class="line"><span class="bullet">•</span> 13120:50612  type value <span class="from">"Ads"</span> <span class="arw">→</span> <span class="to">"ads"</span></div>
+<div class="line dim">  boolean values (True/False) 는 규칙 대상 아님 → 유지</div>
+  </div>
+</div>

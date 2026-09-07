@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="691" viewBox="0 0 700 691" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13">
+<rect width="700" height="691" rx="12" fill="#161b22" stroke="#30363d"/>
+<rect width="700" height="40" rx="12" fill="#21262d"/>
+<rect y="28" width="700" height="12" fill="#21262d"/>
+<circle cx="20" cy="20" r="6" fill="#ff5f56"/><circle cx="40" cy="20" r="6" fill="#ffbd2e"/><circle cx="60" cy="20" r="6" fill="#27c93f"/>
+<text x="82" y="24" fill="#8b949e" font-size="12.5">figma-naming-mcp — checkNaming → previewRename → applyRename</text>
+<text x="20" y="66" xml:space="preserve"><tspan fill="#3fb950">› </tspan><tspan fill="#79c0ff">select SheetTop in Figma · read via Figma MCP · run figma-naming-mcp</tspan></text>
+<rect x="12" y="84" width="676" height="22" rx="4" fill="#1f2a44"/>
+<rect x="12" y="84" width="3" height="22" fill="#58a6ff"/>
+<text x="20" y="99" font-weight="700" fill="#58a6ff">1) checkNaming — 규칙 위반 검사</text>
+<text x="20" y="125" xml:space="preserve"><tspan fill="#f0883e">Naming issues found</tspan></text>
+<text x="20" y="147" xml:space="preserve"><tspan fill="#8b949e">Component</tspan></text>
+<text x="20" y="169" xml:space="preserve"><tspan fill="#c9d1d9">sheet_top </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">SheetTop</tspan></text>
+<text x="20" y="191" xml:space="preserve"><tspan fill="#8b949e">Property</tspan></text>
+<text x="20" y="213" xml:space="preserve"><tspan fill="#c9d1d9">Sub Text</tspan><tspan fill="#6e7681">#21696:0 </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">subText</tspan><tspan fill="#6e7681">#21696:0</tspan></text>
+<text x="20" y="235" xml:space="preserve"><tspan fill="#c9d1d9">Scroll</tspan><tspan fill="#6e7681">#26591:0 </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">scroll</tspan><tspan fill="#6e7681">#26591:0</tspan></text>
+<text x="20" y="257" xml:space="preserve"><tspan fill="#c9d1d9">Show icon</tspan><tspan fill="#6e7681">#105792:0 </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">showIcon</tspan><tspan fill="#6e7681">#105792:0</tspan></text>
+<text x="20" y="279" xml:space="preserve"><tspan fill="#c9d1d9">Type </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">type</tspan></text>
+<text x="20" y="301" xml:space="preserve"><tspan fill="#8b949e">Variant value</tspan></text>
+<text x="20" y="323" xml:space="preserve"><tspan fill="#c9d1d9">Ads </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">ads</tspan></text>
+<text x="20" y="345" xml:space="preserve"><tspan fill="#d29922">6 changes ready</tspan></text>
+<rect x="12" y="363" width="676" height="22" rx="4" fill="#1f2a44"/>
+<rect x="12" y="363" width="3" height="22" fill="#58a6ff"/>
+<text x="20" y="378" font-weight="700" fill="#58a6ff">2) previewRename — before → after 계획 (Figma 미변경)</text>
+<text x="20" y="404" xml:space="preserve"><tspan fill="#6e7681">operations:</tspan></text>
+<text x="20" y="426" xml:space="preserve"><tspan fill="#6e7681">• renameNode         </tspan><tspan fill="#c9d1d9">sheet_top </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">SheetTop</tspan></text>
+<text x="20" y="448" xml:space="preserve"><tspan fill="#6e7681">• renameProperty      </tspan><tspan fill="#c9d1d9">Show icon </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">showIcon</tspan></text>
+<text x="20" y="470" xml:space="preserve"><tspan fill="#6e7681">• renameProperty      </tspan><tspan fill="#c9d1d9">Type </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">type</tspan></text>
+<text x="20" y="492" xml:space="preserve"><tspan fill="#6e7681">• renameVariantValue  </tspan><tspan fill="#c9d1d9">type Ads </tspan><tspan fill="#58a6ff">→ </tspan><tspan fill="#7ee787">ads</tspan></text>
+<text x="20" y="514" xml:space="preserve"><tspan fill="#6e7681">  … + subText, scroll (6 total)</tspan></text>
+<rect x="12" y="532" width="676" height="22" rx="4" fill="#1f2a44"/>
+<rect x="12" y="532" width="3" height="22" fill="#58a6ff"/>
+<text x="20" y="547" font-weight="700" fill="#58a6ff">3) applyRename — 승인 후 Figma 반영 → Before/After 캡처</text>
+<text x="20" y="573" xml:space="preserve"><tspan fill="#3fb950">✓ Approved 6 operations </tspan><tspan fill="#6e7681">· executed via Figma MCP (use_figma)</tspan></text>
+<text x="20" y="595" xml:space="preserve"><tspan fill="#6e7681">• 13120:50612  name → </tspan><tspan fill="#7ee787">"SheetTop"</tspan></text>
+<text x="20" y="617" xml:space="preserve"><tspan fill="#6e7681">• 13120:50612  property "Show icon" → </tspan><tspan fill="#7ee787">"showIcon"</tspan></text>
+<text x="20" y="639" xml:space="preserve"><tspan fill="#6e7681">• 13120:50612  type value "Ads" → </tspan><tspan fill="#7ee787">"ads"</tspan></text>
+<text x="20" y="661" xml:space="preserve"><tspan fill="#6e7681">  boolean values (True/False) 는 규칙 대상 아님 → 유지</tspan></text>
+</svg>
