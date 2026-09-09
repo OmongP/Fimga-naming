@@ -23,9 +23,24 @@ Claude Code에서 검사하고, 변경 후보를 확인한 뒤 적용할 수 있
 | Boolean Value | **변경하지 않음** | `True / False` 유지 |
 
 복합어의 경우 단순히 첫 글자만 대문자로 바꾸지 않고 **의미 단위로 분리**합니다.
-사전(`DEFAULT_DICTIONARY`: bottom, sheet, full, top, ads, box, button …)으로 처리하며 규칙 인자로 확장할 수 있습니다.
+사전(`DEFAULT_DICTIONARY`: bottom, sheet, contents, full, top, ads, box, button, status, bar, text, field, home, dark, mode, service, system, caption, list)으로 처리하며 규칙 인자로 확장할 수 있습니다.
 
-예: `bottomsheet` → `BottomSheet`
+예: `bottomsheet` → `BottomSheet`, `textfield` → `TextField`, `Darkmode` → `darkMode`
+
+### 예외 처리 (기계적 규칙을 적용하면 안 되는 값)
+
+실무에서 그대로 소문자화하면 오히려 깨지는 값들이 있어, 다음은 **변경하지 않습니다**:
+
+| 값 유형 | 예시 | 이유 |
+| --- | --- | --- |
+| 코드성 ID (구분자 포함) | `SS_001_receipt` | 자체 ID 컨벤션 — `sS_001_...`로 깨짐 |
+| 숫자 시작 | `1depth`, `12` | 소문자화 불가 |
+| 비라틴(한글 등) | `주민등록번호` | 대소문자 개념 없음 |
+| 이미 소문자 시작 | `basic`, `suffix-unit` | 준수 |
+
+- **Variant 값은 "대문자로 시작하는 단순 라틴 단어"일 때만** 정규화합니다 (`Yes→yes`, `Selected→selected`).
+- **속성명의 괄호 주석은 제거**한 뒤 케이싱합니다: `Asterisk (별표)` → `asterisk`.
+- `Property 1` 같은 Figma 기본 속성명은 케이싱만 되므로(`property1`), 의미 있는 이름(예: `icon`)은 사람이 지정합니다.
 
 ---
 

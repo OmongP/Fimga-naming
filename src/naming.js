@@ -5,9 +5,10 @@ import {
   DEFAULT_DICTIONARY,
   isDefaultName,
   isValidCase,
-  isValidVariantValue,
   lcFirst,
+  stripAnnotations,
   toCase,
+  variantValueNeedsChange,
 } from "./conventions.js";
 
 // Map raw Figma node types to a rule category.
@@ -60,7 +61,7 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
     // --- Node name ---
     if (isDefaultName(before)) {
       if (supplied && supplied.trim()) {
-        const after = toCase(supplied, targetCase, dictionary);
+        const after = toCase(stripAnnotations(supplied), targetCase, dictionary);
         if (after && after !== before) {
           changes.push({ id: node.id, category, kind: "node", before, after, reason: "default-name-replaced" });
         }
@@ -68,7 +69,7 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
         needsInput.push({ id: node.id, category, before, targetCase });
       }
     } else if (!isValidCase(before, targetCase)) {
-      const after = toCase(before, targetCase, dictionary);
+      const after = toCase(stripAnnotations(before), targetCase, dictionary);
       if (after && after !== before) {
         changes.push({ id: node.id, category, kind: "node", before, after, reason: `not-${targetCase}` });
       }
@@ -85,8 +86,9 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
       const ptype = String(prop.type ?? "").toUpperCase();
 
       // Property name → camelCase (applies to every property type).
+      // Parenthetical annotations are stripped first, e.g. "Asterisk (별표)" → "asterisk".
       if (!isValidCase(base, conv.property)) {
-        const after = toCase(base, conv.property, dictionary) + suffix;
+        const after = toCase(stripAnnotations(base), conv.property, dictionary) + suffix;
         if (after !== pkey) {
           changes.push({ id: node.id, category: "property", kind: "property", propertyKey: pkey, before: pkey, after, reason: `not-${conv.property}` });
         }
@@ -94,16 +96,15 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
         ok.push({ id: node.id, category: "property", name: pkey });
       }
 
-      // Variant string values → start lowercase. Boolean values are the
-      // literal true/false type (rendered True/False) and are NOT touched.
+      // Variant string values → start lowercase, but ONLY plain Latin words
+      // starting uppercase (Yes/No/Selected/Dark). Coded ids (SS_001_receipt),
+      // digit-started (1depth) and non-Latin (Korean) values are left as-is.
+      // Boolean values (True/False) are the literal type and never touched.
       if (ptype === "VARIANT" || Array.isArray(prop.values)) {
         for (const value of prop.values ?? []) {
           const v = String(value);
-          if (!isValidVariantValue(v)) {
-            const after = lcFirst(v);
-            if (after !== v) {
-              changes.push({ id: node.id, category: "variantValue", kind: "variantValue", propertyKey: pkey, before: v, after, reason: "value-not-lower-first" });
-            }
+          if (variantValueNeedsChange(v)) {
+            changes.push({ id: node.id, category: "variantValue", kind: "variantValue", propertyKey: pkey, before: v, after: lcFirst(v), reason: "value-not-lower-first" });
           } else {
             ok.push({ id: node.id, category: "variantValue", name: v });
           }

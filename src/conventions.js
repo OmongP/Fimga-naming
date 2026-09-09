@@ -30,6 +30,15 @@ export const DEFAULT_DICTIONARY = [
   "button",
   "status",
   "bar",
+  "text",
+  "field",
+  "home",
+  "dark",
+  "mode",
+  "service",
+  "system",
+  "caption",
+  "list",
 ];
 
 // Figma's auto-generated names. These carry no meaning, so they always
@@ -43,6 +52,16 @@ export function isDefaultName(name) {
 }
 
 export const lcFirst = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+
+/**
+ * Strip parenthetical annotations from a name before casing.
+ * e.g. "Asterisk (별표)" → "Asterisk". Keeps the meaningful part.
+ */
+export function stripAnnotations(name) {
+  return String(name)
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .trim();
+}
 
 /**
  * Greedily split an all-lowercase, separator-less token into dictionary words.
@@ -76,10 +95,10 @@ export function tokenize(segment, dictionary = DEFAULT_DICTIONARY) {
     .flatMap((w) => w.split(/(?<=[a-zA-Z])(?=[0-9])|(?<=[0-9])(?=[a-zA-Z])/)) // v2 boundaries
     .filter(Boolean);
 
-  // For a single all-lowercase token, try to split it into known words.
+  // For a single alphabetic token (any case), try to split it into known words.
   return raw.flatMap((w) => {
     const lower = w.toLowerCase();
-    if (/^[a-z]+$/.test(w)) {
+    if (/^[a-z]+$/.test(lower)) {
       const split = dictionarySplit(lower, dictionary);
       if (split && split.length > 1) return split;
     }
@@ -120,7 +139,21 @@ export function isValidCase(name, targetCase) {
   return segments.length > 0 && segments.every((seg) => re.test(seg.trim()));
 }
 
-/** A variant string value is valid when it already starts with a lowercase letter. */
+// A variant value is normalized (lowercased first char) ONLY when it is a
+// simple Latin word starting with an uppercase letter — e.g. "Yes", "No",
+// "Selected", "Dark", "DarkMode". Everything else is left untouched:
+//   - already lowercase-first ("basic", "suffix-unit")
+//   - digit-started ("1depth", "12")
+//   - coded identifiers with separators ("SS_001_receipt")
+//   - non-Latin values (Korean: "주민등록번호")
+const NORMALIZABLE_VALUE_RE = /^[A-Z][A-Za-z]*$/;
+
+/** True when the variant value should be normalized (starts uppercase, plain Latin word). */
+export function variantValueNeedsChange(value) {
+  return NORMALIZABLE_VALUE_RE.test(String(value));
+}
+
+/** A variant value is "valid" when it does NOT need normalization. */
 export function isValidVariantValue(value) {
-  return /^[a-z]/.test(String(value));
+  return !variantValueNeedsChange(value);
 }
