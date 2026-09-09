@@ -42,7 +42,20 @@ export const DEFAULT_DICTIONARY = [
   "outline",
   "progress",
   "indicator",
+  "main",
+  "content",
+  "header",
+  "navigation",
+  "notice",
+  "asset",
+  "information",
+  "form",
+  "image",
 ];
+
+// Recommended structural frame names for a screen (semantic guideline, not
+// mechanically enforced — the body/content frame is always "MainContent").
+export const STANDARD_FRAME_NAMES = ["Header", "MainContent", "SheetBottom"];
 
 // Figma's auto-generated names. These carry no meaning, so they always
 // count as violations and cannot be fixed by case conversion alone —
@@ -51,7 +64,10 @@ const DEFAULT_NAME_RE =
   /^(frame|group|component|component set|rectangle|ellipse|vector|line|arrow|star|polygon|slice|image|instance|text|union|subtract|intersect|exclude|mask|section|board)(\s+\d+)?$/i;
 
 export function isDefaultName(name) {
-  return DEFAULT_NAME_RE.test(String(name).trim());
+  const s = String(name).trim();
+  // Figma auto-names (Frame 123, Group 4 …) OR a bare number ("1", "3") —
+  // both are meaningless and need a human/AI-supplied name.
+  return DEFAULT_NAME_RE.test(s) || /^\d+$/.test(s);
 }
 
 export const lcFirst = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);

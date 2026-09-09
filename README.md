@@ -42,6 +42,24 @@ Claude Code에서 검사하고, 변경 후보를 확인한 뒤 적용할 수 있
 - **속성명의 괄호 주석은 제거**한 뒤 케이싱합니다: `Asterisk (별표)` → `asterisk`.
 - `Property 1` 같은 Figma 기본 속성명은 케이싱만 되므로(`property1`), 의미 있는 이름(예: `icon`)은 사람이 지정합니다.
 
+### 프레임 네이밍 규칙 (화면 구조)
+
+모든 프레임은 **역할/내용 기반의 의미 있는 PascalCase** 이름을 가집니다. 표준 화면 구조:
+
+```
+[Screen]                 예: AssetInformation, CounselingRequestComplete
+  StatusBar / TopNavigation   (상단 인스턴스)
+  Header
+  Title
+  MainContent            ← body(본문) 프레임은 항상 MainContent
+    TextField / Period / Loans / Image / NoticeList …  (내용 기반 하위 프레임)
+  SheetBottom            (하단)
+```
+
+- **기본 이름(`Frame 123`)과 숫자만(`1`, `3`)인 프레임은 "의미 있는 이름 필요"로 플래그**됩니다 — 이후 사람/AI가 넣은 이름을 PascalCase로 정규화.
+- "body = `MainContent`"는 의미 가이드라인(옛 이름에서 유추 불가)이라 Claude가 지정합니다.
+- 인스턴스는 컴포넌트명을 유지합니다.
+
 ---
 
 ## 주요 기능

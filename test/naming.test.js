@@ -181,3 +181,36 @@ test("stripAnnotations removes parenthetical glosses before casing", () => {
   assert.equal(prop.after, "asterisk");
   assert.ok(changes.some((c) => c.kind === "variantValue" && c.after === "no"));
 });
+
+// ── Frame naming rule (from reference structure) ──
+
+test("dictionary splits screen-structure compounds", () => {
+  assert.equal(toCase("maincontent", "PascalCase"), "MainContent");
+  assert.equal(toCase("assetform", "PascalCase"), "AssetForm");
+  assert.equal(toCase("assetinformation", "PascalCase"), "AssetInformation");
+  assert.equal(toCase("noticelist", "PascalCase"), "NoticeList");
+  assert.equal(toCase("topnavigation", "PascalCase"), "TopNavigation");
+});
+
+test("bare-number frame names are flagged as needing a meaningful name", () => {
+  assert.equal(isDefaultName("1"), true);
+  assert.equal(isDefaultName("3"), true);
+  assert.equal(isDefaultName("Header"), false);
+  const { changes, needsInput } = analyze([
+    { id: "a", name: "1", type: "FRAME" },
+    { id: "b", name: "Frame 2147237233", type: "FRAME" },
+    { id: "c", name: "MainContent", type: "FRAME" },
+  ]);
+  assert.equal(changes.length, 0); // can't auto-name these
+  assert.equal(needsInput.length, 2); // "1" and the Figma default
+  assert.ok(needsInput.every((n) => n.targetCase === "PascalCase"));
+});
+
+test("supplied meaningful name for a bare-number frame is PascalCased", () => {
+  const { changes } = analyze(
+    [{ id: "a", name: "1", type: "FRAME" }],
+    {},
+    { names: { a: "period" } }
+  );
+  assert.equal(changes[0].after, "Period");
+});
