@@ -39,6 +39,9 @@ export const DEFAULT_DICTIONARY = [
   "system",
   "caption",
   "list",
+  "outline",
+  "progress",
+  "indicator",
 ];
 
 // Figma's auto-generated names. These carry no meaning, so they always
