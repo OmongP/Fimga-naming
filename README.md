@@ -196,6 +196,28 @@ connected
 
 ---
 
+# Figma 플러그인으로 쓰기
+
+MCP 없이 Figma 안에서 같은 규칙 엔진(`src/`)을 바로 실행하는 플러그인입니다.
+Claude나 공식 Figma MCP 연결이 필요 없습니다.
+
+1. Figma 데스크톱 앱 → **Plugins → Development → Import plugin from manifest…**
+2. `figma-plugin/manifest.json` 선택
+3. 레이어를 선택하고(선택이 없으면 현재 페이지 전체) **Plugins → Development → Figma Naming** 실행
+4. 패널에서 `before → after` 목록을 확인하고, 바꾸지 않을 항목은 체크 해제
+5. `Frame 12`처럼 기본 이름인 프레임은 이름을 입력하면 규칙에 맞게 정규화됩니다 (비우면 건너뜀)
+6. **적용** — 각 항목의 ↗ 버튼으로 해당 레이어로 이동할 수 있습니다
+
+적용 순서는 Variant 값 → Property 이름 → 레이어 이름이며, Figma의 실행 취소(⌘Z)로 되돌릴 수 있습니다.
+
+규칙(`src/`)이나 플러그인 코드(`figma-plugin/src/`)를 고친 뒤에는 다시 빌드합니다.
+
+```bash
+npm run build:plugin
+```
+
+---
+
 # Usage
 
 Claude Code에서 정리할 **컴포넌트 / 프레임을 Figma에서 선택**한 뒤 아래와 같이 요청할 수 있습니다.

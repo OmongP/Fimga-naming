@@ -9,13 +9,22 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:plugin": "esbuild figma-plugin/src/code.js --bundle --format=iife --target=es2017 --outfile=figma-plugin/dist/code.js"
   },
-  "keywords": ["figma", "mcp", "naming", "design-system"],
+  "keywords": [
+    "figma",
+    "mcp",
+    "naming",
+    "design-system"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10"
   }
 }
