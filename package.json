@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "node --test",
-    "build:plugin": "esbuild figma-plugin/src/code.js --bundle --format=iife --target=es2017 --outfile=figma-plugin/dist/code.js"
+    "build:plugin": "esbuild figma-plugin/src/code.js --bundle --format=iife --target=es2017 --outfile=figma-plugin/dist/code.js",
+    "pack:plugin": "npm run build:plugin && rm -rf figma-naming-plugin figma-naming-plugin.zip && mkdir -p figma-naming-plugin/dist && cp figma-plugin/manifest.json figma-plugin/ui.html figma-naming-plugin/ && cp figma-plugin/dist/code.js figma-naming-plugin/dist/ && zip -qr figma-naming-plugin.zip figma-naming-plugin && rm -rf figma-naming-plugin"
   },
   "keywords": [
     "figma",

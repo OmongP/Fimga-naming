@@ -1,9 +1,72 @@
-# Figma Naming MCP
+# Figma Naming
 
-Figma 디자인 파일의 네이밍 규칙을 검사하고 정리하기 위한 MCP입니다.
+Figma 디자인 파일의 네이밍 규칙을 검사하고 정리하는 도구입니다.
 
 디자이너가 반복적으로 확인하던 **Frame · Component · Property · Variant** 네이밍을
-Claude Code에서 검사하고, 변경 후보를 확인한 뒤 적용할 수 있도록 만들었습니다.
+검사하고, 변경 후보를 확인한 뒤 적용할 수 있도록 만들었습니다.
+두 가지 방식으로 쓸 수 있고, 둘 다 같은 규칙 엔진(`src/`)을 사용합니다.
+
+| 방식 | 이런 분께 | 필요한 것 |
+| --- | --- | --- |
+| **[Figma 플러그인](#figma-플러그인-빠른-시작)** | Figma 안에서 바로 쓰고 싶은 디자이너 | Figma 데스크톱 앱 |
+| **[MCP](#installation)** | Claude Code로 대화하며 정리하고 싶은 분 | Node.js, Claude Code, 공식 Figma MCP |
+
+---
+
+## Figma 플러그인 빠른 시작
+
+### 1. 다운로드
+
+**[⬇️ figma-naming-plugin.zip 다운로드](https://github.com/OmongP/Fimga-naming/releases/latest/download/figma-naming-plugin.zip)**
+
+받은 zip 파일의 압축을 풉니다. 안에 `figma-naming-plugin` 폴더가 있습니다.
+
+```text
+figma-naming-plugin/
+  manifest.json
+  ui.html
+  dist/code.js
+```
+
+> 압축을 푼 폴더는 지우거나 옮기지 마세요. Figma가 이 위치의 파일을 계속 읽습니다.
+> 문서·Applications 같은 고정된 곳에 두는 것을 추천합니다.
+
+### 2. Figma에 등록 (처음 한 번만)
+
+1. **Figma 데스크톱 앱**을 엽니다. (웹 브라우저 버전에서는 개발 플러그인을 불러올 수 없습니다)
+2. 아무 디자인 파일이나 열고, 메뉴에서 **Plugins → Development → Import plugin from manifest…** 를 선택합니다.
+3. 압축을 푼 폴더의 `manifest.json`을 선택합니다.
+
+이제 **Plugins → Development → Figma Naming** 에 플러그인이 보입니다.
+
+### 3. 사용하기
+
+1. 정리할 프레임이나 컴포넌트를 선택합니다. (아무것도 선택하지 않으면 **현재 페이지 전체**를 검사합니다)
+2. **Plugins → Development → Figma Naming** 을 실행합니다.
+3. 패널에서 `before → after` 목록을 확인합니다.
+   - 바꾸지 않을 항목은 **체크를 해제**합니다.
+   - `Frame 12`처럼 기본 이름인 프레임은 **이름을 입력**하면 규칙에 맞게 정리됩니다. 비워 두면 건너뜁니다.
+   - 항목 오른쪽 **↗** 를 누르면 해당 레이어로 이동합니다.
+4. **적용**을 누릅니다. 결과가 마음에 들지 않으면 **⌘Z (Ctrl+Z)** 로 되돌릴 수 있습니다.
+5. 레이어 선택을 바꿨다면 **다시 검사**를 누릅니다.
+
+### 업데이트
+
+새 버전의 zip을 받아 **기존 폴더에 덮어쓰면** 됩니다. Figma에 다시 등록할 필요는 없습니다.
+모든 버전은 [Releases](https://github.com/OmongP/Fimga-naming/releases)에서 볼 수 있습니다.
+
+### 자주 묻는 질문
+
+- **Plugins 메뉴에 Development가 없어요** → 데스크톱 앱인지 확인하세요. 브라우저에서는 보이지 않습니다.
+- **플러그인이 사라졌어요** → 압축을 푼 폴더를 옮겼거나 지웠을 수 있습니다. 2단계를 다시 해 주세요.
+- **"적용 실패"가 떠요** → 패널에 표시된 오류 문구와 함께 [Issues](https://github.com/OmongP/Fimga-naming/issues)에 남겨 주세요.
+- **인터넷 연결이 필요한가요?** → 아니요. 플러그인은 외부로 아무 데이터도 보내지 않습니다.
+
+---
+
+# Figma Naming MCP
+
+Claude Code에서 쓰는 MCP 버전입니다.
 `checkNaming → previewRename → applyRename` 3단계로 안전하게 이름을 정리합니다.
 
 ## 실행 화면
@@ -196,28 +259,6 @@ connected
 
 ---
 
-# Figma 플러그인으로 쓰기
-
-MCP 없이 Figma 안에서 같은 규칙 엔진(`src/`)을 바로 실행하는 플러그인입니다.
-Claude나 공식 Figma MCP 연결이 필요 없습니다.
-
-1. Figma 데스크톱 앱 → **Plugins → Development → Import plugin from manifest…**
-2. `figma-plugin/manifest.json` 선택
-3. 레이어를 선택하고(선택이 없으면 현재 페이지 전체) **Plugins → Development → Figma Naming** 실행
-4. 패널에서 `before → after` 목록을 확인하고, 바꾸지 않을 항목은 체크 해제
-5. `Frame 12`처럼 기본 이름인 프레임은 이름을 입력하면 규칙에 맞게 정규화됩니다 (비우면 건너뜀)
-6. **적용** — 각 항목의 ↗ 버튼으로 해당 레이어로 이동할 수 있습니다
-
-적용 순서는 Variant 값 → Property 이름 → 레이어 이름이며, Figma의 실행 취소(⌘Z)로 되돌릴 수 있습니다.
-
-규칙(`src/`)이나 플러그인 코드(`figma-plugin/src/`)를 고친 뒤에는 다시 빌드합니다.
-
-```bash
-npm run build:plugin
-```
-
----
-
 # Usage
 
 Claude Code에서 정리할 **컴포넌트 / 프레임을 Figma에서 선택**한 뒤 아래와 같이 요청할 수 있습니다.
@@ -350,6 +391,23 @@ node examples/demo.mjs
 ```
 
 ---
+
+
+## 플러그인 개발
+
+```bash
+npm run build:plugin   # figma-plugin/dist/code.js 빌드
+npm run pack:plugin    # 배포용 figma-naming-plugin.zip 생성
+```
+
+`src/` 규칙이나 `figma-plugin/src/` 코드를 고친 뒤에는 `npm run build:plugin`으로 다시 빌드합니다.
+저장소를 clone했다면 `figma-plugin/manifest.json`을 바로 Figma에 불러와 테스트할 수 있습니다.
+
+새 버전 배포는 태그를 올리면 GitHub Actions가 zip을 만들어 Release에 첨부합니다.
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
 
 # Future
 
