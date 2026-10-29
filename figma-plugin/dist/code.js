@@ -188,6 +188,35 @@
     return { changes, needsInput, ok };
   }
 
+  // src/numbering.js
+  var TRAILING_NUMBER = /^(.*?)([\s_-]*)(\d+)$/;
+  var ROW_TOLERANCE = 30;
+  function readingOrder(nodes, tolerance = ROW_TOLERANCE) {
+    const sorted = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
+    const rows = [];
+    for (const node of sorted) {
+      const row = rows[rows.length - 1];
+      if (row && node.y - row.top <= tolerance) row.items.push(node);
+      else rows.push({ top: node.y, items: [node] });
+    }
+    return rows.flatMap((r) => r.items.sort((a, b) => a.x - b.x));
+  }
+  function renumber(nodes) {
+    var _a;
+    const changes = [];
+    let index = 0;
+    for (const node of readingOrder(nodes)) {
+      const before = String((_a = node.name) != null ? _a : "");
+      const match = before.match(TRAILING_NUMBER);
+      if (!match) continue;
+      index += 1;
+      const [, prefix, separator] = match;
+      const after = `${prefix}${separator}${index}`;
+      if (after !== before) changes.push({ id: node.id, before, after });
+    }
+    return changes;
+  }
+
   // figma-plugin/src/figma-ops.js
   var CHECKED_TYPES = /* @__PURE__ */ new Set(["FRAME", "SECTION", "COMPONENT", "COMPONENT_SET"]);
   var isVariantChild = (node) => node.type === "COMPONENT" && node.parent && node.parent.type === "COMPONENT_SET";
@@ -271,6 +300,7 @@
   // figma-plugin/src/code.js
   figma.showUI(__html__, { width: 420, height: 560, themeColors: true });
   var lastNodes = [];
+  var lastNumberChanges = [];
   function scanRoots() {
     const selection = figma.currentPage.selection;
     return selection.length > 0 ? { roots: selection, scope: `\uC120\uD0DD\uD55C ${selection.length}\uAC1C \uB808\uC774\uC5B4` } : { roots: figma.currentPage.children, scope: `\uD604\uC7AC \uD398\uC774\uC9C0 "${figma.currentPage.name}" \uC804\uCCB4` };
@@ -288,9 +318,39 @@
       needsInput
     });
   }
+  function numberCheck() {
+    const selection = figma.currentPage.selection;
+    const byParent = /* @__PURE__ */ new Map();
+    for (const node of selection) {
+      const key = node.parent ? node.parent.id : "root";
+      if (!byParent.has(key)) byParent.set(key, []);
+      byParent.get(key).push(node);
+    }
+    lastNumberChanges = [...byParent.values()].flatMap((siblings) => renumber(siblings));
+    figma.ui.postMessage({
+      type: "numberResult",
+      scope: selection.length ? `\uC120\uD0DD\uD55C ${selection.length}\uAC1C \uB808\uC774\uC5B4` : "\uB808\uC774\uC5B4\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694",
+      changes: lastNumberChanges
+    });
+  }
   figma.ui.onmessage = async (msg) => {
     if (msg.type === "check") {
       check();
+    } else if (msg.type === "numberCheck") {
+      numberCheck();
+    } else if (msg.type === "numberApply") {
+      const picked = new Set(msg.keys || []);
+      let applied = 0;
+      for (const c of lastNumberChanges) {
+        if (!picked.has(c.id)) continue;
+        const node = await figma.getNodeByIdAsync(c.id);
+        if (node) {
+          node.name = c.after;
+          applied++;
+        }
+      }
+      figma.notify(`${applied}\uAC1C \uBC88\uD638\uB97C \uB2E4\uC2DC \uB9E4\uACBC\uC5B4\uC694`);
+      numberCheck();
     } else if (msg.type === "apply") {
       const { changes } = analyze(lastNodes, {}, { names: msg.names || {} });
       const picked = new Set(msg.keys || []);

@@ -4,11 +4,13 @@
 // Flow: check (selection or page) → preview in the UI → user picks → apply.
 
 import { analyze } from "../../src/naming.js";
+import { renumber } from "../../src/numbering.js";
 import { applyChanges, changeKey, collectNodes } from "./figma-ops.js";
 
 figma.showUI(__html__, { width: 420, height: 560, themeColors: true });
 
 let lastNodes = [];
+let lastNumberChanges = [];
 
 function scanRoots() {
   const selection = figma.currentPage.selection;
@@ -31,9 +33,41 @@ function check() {
   });
 }
 
+// Number the selected layers 1, 2, 3 … per parent, in reading order.
+function numberCheck() {
+  const selection = figma.currentPage.selection;
+  const byParent = new Map();
+  for (const node of selection) {
+    const key = node.parent ? node.parent.id : "root";
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(node);
+  }
+  lastNumberChanges = [...byParent.values()].flatMap((siblings) => renumber(siblings));
+  figma.ui.postMessage({
+    type: "numberResult",
+    scope: selection.length ? `선택한 ${selection.length}개 레이어` : "레이어를 선택해 주세요",
+    changes: lastNumberChanges,
+  });
+}
+
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "check") {
     check();
+  } else if (msg.type === "numberCheck") {
+    numberCheck();
+  } else if (msg.type === "numberApply") {
+    const picked = new Set(msg.keys || []);
+    let applied = 0;
+    for (const c of lastNumberChanges) {
+      if (!picked.has(c.id)) continue;
+      const node = await figma.getNodeByIdAsync(c.id);
+      if (node) {
+        node.name = c.after;
+        applied++;
+      }
+    }
+    figma.notify(`${applied}개 번호를 다시 매겼어요`);
+    numberCheck();
   } else if (msg.type === "apply") {
     // Re-run with the names typed for default-named nodes, keep only what the user ticked.
     const { changes } = analyze(lastNodes, {}, { names: msg.names || {} });

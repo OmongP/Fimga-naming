@@ -20,11 +20,18 @@
   button.btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--figma-color-border, #ccc); background: transparent; color: inherit; font: inherit; cursor: pointer; }
   button.primary { border: 0; background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); font-weight: 600; }
   button:disabled { opacity: .4; cursor: default; }
+  .tabs { display: flex; gap: 4px; margin-top: 10px; }
+  .tab { flex: 1; padding: 5px 0; border: 1px solid var(--figma-color-border, #ccc); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+  .tab.on { border-color: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-brand, #0d99ff); font-weight: 600; }
 </style>
 
 <header>
   <h1>Figma Naming</h1>
   <p id="scope">검사 중…</p>
+  <nav class="tabs">
+    <button class="tab on" data-tab="name">이름 규칙</button>
+    <button class="tab" data-tab="number">번호 매기기</button>
+  </nav>
 </header>
 <main id="list"></main>
 <footer>
@@ -42,6 +49,8 @@
 
   let state = { changes: [], needsInput: [] };
   let failures = [];
+  let tab = "name";
+  let numberState = { scope: "", changes: [] };
 
   function render() {
     const { changes, needsInput } = state;
@@ -89,6 +98,29 @@
     $("apply").disabled = n === 0;
   }
 
+  function renderNumber() {
+    const { scope, changes } = numberState;
+    $("scope").textContent = scope;
+    $("list").innerHTML = changes.length
+      ? `<h2>1부터 다시 번호 매기기</h2>` + changes.map((c) => `
+        <label class="row">
+          <input type="checkbox" data-key="${esc(c.id)}" checked>
+          <span class="names"><span class="before">${esc(c.before)}</span>→<span class="after">${esc(c.after)}</span></span>
+          <button class="goto" data-id="${esc(c.id)}" title="레이어로 이동">↗</button>
+        </label>`).join("")
+      : `<div class="empty">번호를 다시 매길 레이어를 선택해 주세요<br>좌→우, 다음 줄 순서로 1부터 매겨요 (y 차이 30px 이내는 같은 줄)</div>`;
+    updateCount();
+  }
+
+  function setTab(name) {
+    tab = name;
+    for (const el of document.querySelectorAll(".tab")) el.classList.toggle("on", el.dataset.tab === name);
+    failures = [];
+    send({ type: name === "number" ? "numberCheck" : "check" });
+  }
+
+  for (const el of document.querySelectorAll(".tab")) el.onclick = () => setTab(el.dataset.tab);
+
   $("list").addEventListener("input", updateCount);
   $("list").addEventListener("click", (e) => {
     const btn = e.target.closest(".goto");
@@ -96,16 +128,24 @@
     e.preventDefault();
     send({ type: "focus", id: btn.dataset.id });
   });
-  $("recheck").onclick = () => { failures = []; send({ type: "check" }); };
-  $("apply").onclick = () => { $("apply").disabled = true; send({ type: "apply", ...selected() }); };
+  $("recheck").onclick = () => setTab(tab);
+  $("apply").onclick = () => {
+    $("apply").disabled = true;
+    if (tab === "number") send({ type: "numberApply", keys: selected().keys });
+    else send({ type: "apply", ...selected() });
+  };
 
   onmessage = (e) => {
     const msg = e.data.pluginMessage;
     if (!msg) return;
     if (msg.type === "result") {
       state = msg;
+      if (tab !== "name") return;
       $("scope").textContent = `${msg.scope} · 검사 ${msg.nodeCount}개`;
       render();
+    } else if (msg.type === "numberResult") {
+      numberState = msg;
+      if (tab === "number") renderNumber();
     } else if (msg.type === "applied") {
       failures = msg.failed;
     }
