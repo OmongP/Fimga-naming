@@ -1,32 +1,71 @@
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
-  header { padding: 12px 16px; border-bottom: 1px solid var(--figma-color-border, #e5e5e5); }
-  header h1 { margin: 0; font-size: 13px; font-weight: 600; }
-  header p { margin: 2px 0 0; color: var(--figma-color-text-secondary, #777); }
-  main { padding: 8px 16px 96px; }
-  h2 { margin: 16px 0 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--figma-color-text-secondary, #777); }
-  .row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
-  .row input[type=checkbox] { margin: 0; }
+  :root {
+    --bg: #ffffff; --fill: #f2f4f6; --fill-strong: #e5e8eb; --line: #f2f4f6;
+    --text: #191f28; --text-2: #4e5968; --text-3: #8b95a1; --text-4: #b0b8c1;
+    /* Point color, sampled from the design's primary button. */
+    --point: #2c62fa; --point-press: #1f4fd8; --point-soft: #ebf0ff; --point-text: #2c62fa; --on-point: #ffffff; --red: #f04452;
+  }
+  html.figma-dark {
+    --bg: #17171c; --fill: #2c2c35; --fill-strong: #3c3c47; --line: #2c2c35;
+    --text: #f2f4f6; --text-2: #c3c8cf; --text-3: #8b95a1; --text-4: #62626d;
+    --point-soft: #1a2547; --point-text: #7a9cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, "Apple SD Gothic Neo", Pretendard, Inter, system-ui, sans-serif; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  header { padding: 20px 20px 12px; }
+  header h1 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+  header h1 svg { flex: none; width: 24px; height: 24px; }
+  header p { margin: 2px 0 0; font-size: 13px; color: var(--text-3); }
+  .tabs { display: flex; gap: 2px; margin-top: 16px; padding: 3px; border-radius: 7px; background: var(--fill); }
+  .tab { flex: 1; height: 36px; border: 0; border-radius: 7px; background: transparent; color: var(--text-3); font: inherit; font-weight: 600; cursor: pointer; }
+  .tab.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+  main { padding: 4px 20px 100px; }
+  h2 { margin: 20px 0 6px; font-size: 13px; font-weight: 600; color: var(--text-3); }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row input[type=checkbox] { appearance: none; flex: none; width: 22px; height: 22px; margin: 0; border-radius: 50%; background: var(--fill-strong); cursor: pointer; }
+  .row input[type=checkbox]:checked { background: var(--point) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M6.5 11.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
   .names { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .before { color: var(--figma-color-text-secondary, #777); text-decoration: line-through; word-break: break-all; }
+  .before { color: var(--text-4); text-decoration: line-through; word-break: break-all; }
+  .arrow { color: var(--text-4); }
   .after { font-weight: 600; word-break: break-all; }
-  .row input[type=text] { flex: 1; min-width: 100px; padding: 4px 6px; border: 1px solid var(--figma-color-border, #ccc); border-radius: 4px; background: transparent; color: inherit; font: inherit; }
-  .goto { border: 0; background: none; color: var(--figma-color-text-brand, #0d99ff); cursor: pointer; padding: 0 2px; font: inherit; }
-  .empty { padding: 32px 0; text-align: center; color: var(--figma-color-text-secondary, #777); }
-  .error { color: var(--figma-color-text-danger, #e03e1a); }
-  footer { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--figma-color-border, #e5e5e5); background: var(--figma-color-bg, #fff); }
-  footer .count { flex: 1; color: var(--figma-color-text-secondary, #777); }
-  button.btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--figma-color-border, #ccc); background: transparent; color: inherit; font: inherit; cursor: pointer; }
-  button.primary { border: 0; background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); font-weight: 600; }
-  button:disabled { opacity: .4; cursor: default; }
-  .tabs { display: flex; gap: 4px; margin-top: 10px; }
-  .tab { flex: 1; padding: 5px 0; border: 1px solid var(--figma-color-border, #ccc); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-  .tab.on { border-color: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-brand, #0d99ff); font-weight: 600; }
+  .tag { padding: 1px 7px; border-radius: 7px; background: var(--point-soft); color: var(--point-text); font-size: 12px; font-weight: 600; }
+  .field { width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text); font: inherit; font-size: 15px; outline: none; }
+  .field:focus { box-shadow: inset 0 0 0 2px var(--point); }
+  .field::placeholder { color: var(--text-4); }
+  .row .field { flex: 1; min-width: 100px; height: 38px; font-size: 14px; }
+  .goto { flex: none; width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--text-3); cursor: pointer; font: inherit; }
+  .goto:hover { background: var(--fill); color: var(--text); }
+  .orders { display: flex; gap: 8px; }
+  .order { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0 10px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text-3); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .order.on { background: var(--point-soft); color: var(--point-text); box-shadow: inset 0 0 0 2px var(--point); }
+  .selected-count { margin-top: 20px; font-size: 15px; font-weight: 700; }
+  .selected-count b { color: var(--point-text); }
+  .empty { padding: 48px 0; text-align: center; color: var(--text-3); line-height: 1.7; }
+  .empty strong { display: block; margin-bottom: 4px; font-size: 16px; color: var(--text); }
+  .error { color: var(--red); }
+  footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 20px 20px; background: linear-gradient(to bottom, transparent, var(--bg) 16px); }
+  footer .count { margin: 0 0 8px; text-align: center; font-size: 13px; color: var(--text-3); }
+  footer .buttons { display: flex; gap: 8px; }
+  button.btn { height: 47px; border: 0; border-radius: 7px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button.secondary { flex: 1; background: var(--fill); color: var(--text-2); }
+  button.primary { flex: 2; background: var(--point); color: var(--on-point); }
+  button.primary:active { background: var(--point-press); }
+  button:disabled { opacity: .35; cursor: default; }
 </style>
 
 <header>
-  <h1>Figma Naming</h1>
+  <h1>
+    <svg viewBox="0 0 1254 1254" aria-hidden="true">
+      <rect width="1254" height="1254" rx="280" fill="#0048ff"/>
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M250 460V257h220M783 257h222v203M250 790v205h220M783 995h222V790" stroke="#fff" stroke-width="82"/>
+        <path d="M390 560h258M390 693h258" stroke="#fff" stroke-width="84"/>
+        <path d="M747 490h133M812 490v275M747 765h133" stroke="#55f5ff" stroke-width="48"/>
+      </g>
+    </svg>
+    Figma Naming
+  </h1>
   <p id="scope">검사 중…</p>
   <nav class="tabs">
     <button class="tab on" data-tab="name">이름 규칙</button>
@@ -35,22 +74,39 @@
 </header>
 <main id="list"></main>
 <footer>
-  <span class="count" id="count"></span>
-  <button class="btn" id="recheck">다시 검사</button>
-  <button class="btn primary" id="apply" disabled>적용</button>
+  <p class="count" id="count"></p>
+  <div class="buttons">
+    <button class="btn secondary" id="recheck">다시 검사</button>
+    <button class="btn primary" id="apply" disabled>적용</button>
+  </div>
 </footer>
 
 <script>
-  const LABEL = { component: "Component", property: "Property", variantValue: "Variant value", frame: "Frame" };
+  const LABEL = { component: "컴포넌트", property: "속성", variantValue: "Variant 값", frame: "프레임" };
   const ORDER = ["component", "property", "variantValue", "frame"];
   const $ = (id) => document.getElementById(id);
   const send = (msg) => parent.postMessage({ pluginMessage: msg }, "*");
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const changeRow = (c, checkbox) => `
+    <label class="row">
+      ${checkbox ? `<input type="checkbox" data-key="${esc(c.key)}" checked>` : ""}
+      <span class="names"><span class="before">${esc(c.before)}</span><span class="arrow">→</span><span class="after">${esc(c.after)}</span>${c.reason === "typo" ? `<span class="tag">오타?</span>` : ""}</span>
+      <button class="goto" data-id="${esc(c.id)}" title="레이어로 이동">↗</button>
+    </label>`;
+
+  // Z (row first) and N (column first) paths through a 2×2 grid.
+  const orderIcon = (points) => `
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      ${[[6, 6], [24, 6], [6, 24], [24, 24]].map(([x, y]) => `<rect x="${x}" y="${y}" width="10" height="10" rx="3" fill="currentColor" opacity=".25"/>`).join("")}
+      <polyline points="${points}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
 
   let state = { changes: [], needsInput: [] };
   let failures = [];
   let tab = "name";
-  let numberState = { scope: "", changes: [] };
+  let numberState = { changes: [] };
+  let prefix = "";
+  let order = "row";
 
   function render() {
     const { changes, needsInput } = state;
@@ -60,23 +116,18 @@
         `<div class="row error">${esc(f.before)} → ${esc(f.after)}: ${esc(f.error)}</div>`).join("");
     }
     if (!changes.length && !needsInput.length) {
-      html += `<div class="empty">규칙에 맞지 않는 이름이 없어요 ✓</div>`;
+      html += `<div class="empty"><strong>모든 이름이 규칙에 맞아요</strong>바꿀 이름이 없어요</div>`;
     }
     for (const cat of ORDER) {
       const group = changes.filter((c) => c.category === cat);
       if (!group.length) continue;
-      html += `<h2>${LABEL[cat]}</h2>` + group.map((c) => `
-        <label class="row">
-          <input type="checkbox" data-key="${esc(c.key)}" checked>
-          <span class="names"><span class="before">${esc(c.before)}</span>→<span class="after">${esc(c.after)}</span></span>
-          <button class="goto" data-id="${esc(c.id)}" title="레이어로 이동">↗</button>
-        </label>`).join("");
+      html += `<h2>${LABEL[cat]}</h2>` + group.map((c) => changeRow(c, true)).join("");
     }
     if (needsInput.length) {
-      html += `<h2>의미 있는 이름 필요</h2>` + needsInput.map((n) => `
+      html += `<h2>의미 있는 이름이 필요해요 · 구조를 보고 제안했어요</h2>` + needsInput.map((n) => `
         <div class="row">
-          <span class="before">${esc(n.before)}</span>→
-          <input type="text" data-id="${esc(n.id)}" placeholder="${n.targetCase} 이름 (비우면 건너뜀)">
+          <span class="before">${esc(n.before)}</span><span class="arrow">→</span>
+          <input class="field" type="text" data-id="${esc(n.id)}" value="${esc(n.suggestion ?? "")}" placeholder="${n.targetCase} 이름 (비우면 건너뜀)">
           <button class="goto" data-id="${esc(n.id)}" title="레이어로 이동">↗</button>
         </div>`).join("");
     }
@@ -84,45 +135,82 @@
     updateCount();
   }
 
+  function renderNumber() {
+    const { changes } = numberState;
+    $("scope").textContent = "선택한 레이어를 접두어 + 1, 2, 3 … 으로 바꿔요";
+    // Keep the prefix field (and its focus) across re-renders; only refresh the rest.
+    if (!$("prefix")) {
+      $("list").innerHTML = `
+        <h2>접두어</h2>
+        <input class="field" id="prefix" type="text" placeholder="예: Screen_" autocomplete="off">
+        <h2>순서</h2>
+        <div class="orders">
+          <button class="order" data-order="row">${orderIcon("11,11 29,11 11,29 29,29")}가로 먼저</button>
+          <button class="order" data-order="column">${orderIcon("11,11 11,29 29,11 29,29")}세로 먼저</button>
+        </div>
+        <div id="numberPreview"></div>`;
+      $("prefix").value = prefix;
+    }
+    for (const el of document.querySelectorAll(".order")) el.classList.toggle("on", el.dataset.order === order);
+    $("numberPreview").innerHTML =
+      `<p class="selected-count">선택한 레이어 <b>${changes.length}</b>개</p>` +
+      (changes.length
+        ? changes.map((c) => changeRow(c, false)).join("")
+        : `<div class="empty">캔버스에서 이름을 바꿀 프레임을 선택해 주세요</div>`);
+    updateCount();
+  }
+
   function selected() {
     const keys = [...document.querySelectorAll("input[type=checkbox]:checked")].map((el) => el.dataset.key);
     const names = {};
-    for (const el of document.querySelectorAll("input[type=text]")) if (el.value.trim()) names[el.dataset.id] = el.value.trim();
+    for (const el of document.querySelectorAll(".row input[type=text]")) if (el.value.trim()) names[el.dataset.id] = el.value.trim();
     return { keys, names };
   }
 
   function updateCount() {
+    if (tab === "number") {
+      const n = numberState.changes.length;
+      $("count").textContent = n ? `${n}개 이름을 바꿔요` : "";
+      $("apply").textContent = "이름 바꾸기";
+      $("apply").disabled = n === 0;
+      return;
+    }
     const { keys, names } = selected();
     const n = keys.length + Object.keys(names).length;
     $("count").textContent = `${n}개 적용 예정`;
+    $("apply").textContent = "적용";
     $("apply").disabled = n === 0;
   }
 
-  function renderNumber() {
-    const { scope, changes } = numberState;
-    $("scope").textContent = scope;
-    $("list").innerHTML = changes.length
-      ? `<h2>1부터 다시 번호 매기기</h2>` + changes.map((c) => `
-        <label class="row">
-          <input type="checkbox" data-key="${esc(c.id)}" checked>
-          <span class="names"><span class="before">${esc(c.before)}</span>→<span class="after">${esc(c.after)}</span></span>
-          <button class="goto" data-id="${esc(c.id)}" title="레이어로 이동">↗</button>
-        </label>`).join("")
-      : `<div class="empty">번호를 다시 매길 레이어를 선택해 주세요<br>좌→우, 다음 줄 순서로 1부터 매겨요 (y 차이 30px 이내는 같은 줄)</div>`;
-    updateCount();
-  }
+  const numberCheck = () => send({ type: "numberCheck", prefix, order });
 
   function setTab(name) {
     tab = name;
     for (const el of document.querySelectorAll(".tab")) el.classList.toggle("on", el.dataset.tab === name);
     failures = [];
-    send({ type: name === "number" ? "numberCheck" : "check" });
+    $("list").innerHTML = "";
+    $("recheck").hidden = name === "number";
+    if (name === "number") numberCheck();
+    else send({ type: "check" });
   }
 
   for (const el of document.querySelectorAll(".tab")) el.onclick = () => setTab(el.dataset.tab);
 
-  $("list").addEventListener("input", updateCount);
+  $("list").addEventListener("input", (e) => {
+    if (e.target.id === "prefix") {
+      prefix = e.target.value;
+      numberCheck();
+    } else {
+      updateCount();
+    }
+  });
   $("list").addEventListener("click", (e) => {
+    const orderBtn = e.target.closest(".order");
+    if (orderBtn) {
+      order = orderBtn.dataset.order;
+      numberCheck();
+      return;
+    }
     const btn = e.target.closest(".goto");
     if (!btn) return;
     e.preventDefault();
@@ -131,7 +219,7 @@
   $("recheck").onclick = () => setTab(tab);
   $("apply").onclick = () => {
     $("apply").disabled = true;
-    if (tab === "number") send({ type: "numberApply", keys: selected().keys });
+    if (tab === "number") send({ type: "numberApply" });
     else send({ type: "apply", ...selected() });
   };
 

@@ -4,6 +4,9 @@
 // Pure string helpers are exported separately so they can be unit-tested
 // without a Figma runtime.
 
+import { isDefaultName } from "../../src/conventions.js";
+import { componentWord, suggestName } from "../../src/suggest.js";
+
 // Node types the engine checks. Instances keep their main component's name,
 // and variant components inside a set are renamed through variant values.
 const CHECKED_TYPES = new Set(["FRAME", "SECTION", "COMPONENT", "COMPONENT_SET"]);
@@ -48,6 +51,39 @@ function readProperties(node) {
   }));
 }
 
+// A screen is a top-level frame on the page; its direct children get a positional role.
+function screenRole(node) {
+  const screen = node.parent;
+  if (!screen || screen.type !== "FRAME" || !screen.parent || screen.parent.type !== "PAGE") return undefined;
+  const h = screen.height;
+  if (!h) return undefined;
+  if (node.y <= h * 0.15 && node.height <= h * 0.3) return "top";
+  if (node.y + node.height >= h * 0.85 && node.height <= h * 0.35) return "bottom";
+  if (node.height >= h * 0.4) return "middle";
+  return undefined;
+}
+
+const hasImageFill = (n) => Array.isArray(n.fills) && n.fills.some((f) => f.type === "IMAGE" && f.visible !== false);
+const ICON_TYPES = new Set(["VECTOR", "BOOLEAN_OPERATION", "STAR", "POLYGON"]);
+
+// Content words for one child. Plain frames / groups are opened one level.
+function contentsOf(node, depth = 0) {
+  if (node.visible === false) return [];
+  if (node.type === "TEXT") return [typeof node.fontSize === "number" && node.fontSize >= 20 ? "Title" : "Text"];
+  if (hasImageFill(node)) return ["Image"];
+  if (node.type === "INSTANCE") return [componentWord(node.name)];
+  if (ICON_TYPES.has(node.type)) return ["Icon"];
+  if (node.type === "LINE") return ["Divider"];
+  if (depth === 0 && "children" in node) return node.children.flatMap((c) => contentsOf(c, 1));
+  return []; // shapes used as backgrounds, deeper frames
+}
+
+/** Summarize a node's content for suggestName(). */
+export function describeNode(node) {
+  const kids = "children" in node ? node.children : [];
+  return { role: screenRole(node), contents: kids.flatMap((k) => contentsOf(k)).filter(Boolean) };
+}
+
 /** Collect checkable nodes from the given roots (roots + descendants). */
 export function collectNodes(roots) {
   const out = [];
@@ -56,7 +92,9 @@ export function collectNodes(roots) {
     if (seen.has(node.id)) return;
     seen.add(node.id);
     if (CHECKED_TYPES.has(node.type) && !isVariantChild(node)) {
-      out.push({ id: node.id, name: node.name, type: node.type, properties: readProperties(node) });
+      const entry = { id: node.id, name: node.name, type: node.type, properties: readProperties(node) };
+      if (isDefaultName(node.name)) entry.suggestion = suggestName(describeNode(node)) ?? undefined;
+      out.push(entry);
     }
     if (node.type === "INSTANCE") return; // don't descend into instance internals
     if ("children" in node) for (const child of node.children) visit(child);

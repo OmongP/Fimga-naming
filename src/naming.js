@@ -10,6 +10,7 @@ import {
   toCase,
   variantValueNeedsChange,
 } from "./conventions.js";
+import { correctSpelling } from "./spelling.js";
 
 // Map raw Figma node types to a rule category.
 function categoryOf(type) {
@@ -61,7 +62,7 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
     // --- Node name ---
     if (isDefaultName(before)) {
       if (supplied && supplied.trim()) {
-        const after = toCase(stripAnnotations(supplied), targetCase, dictionary);
+        const after = correctSpelling(toCase(stripAnnotations(supplied), targetCase, dictionary));
         if (after && after !== before) {
           changes.push({ id: node.id, category, kind: "node", before, after, reason: "default-name-replaced" });
         }
@@ -69,10 +70,13 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
         needsInput.push({ id: node.id, category, before, targetCase });
       }
     } else if (!isValidCase(before, targetCase)) {
-      const after = toCase(stripAnnotations(before), targetCase, dictionary);
+      const after = correctSpelling(toCase(stripAnnotations(before), targetCase, dictionary));
       if (after && after !== before) {
         changes.push({ id: node.id, category, kind: "node", before, after, reason: `not-${targetCase}` });
       }
+    } else if (correctSpelling(before) !== before) {
+      // Right case, but a word looks misspelled: GraphStatContainr → GraphStatContainer.
+      changes.push({ id: node.id, category, kind: "node", before, after: correctSpelling(before), reason: "typo" });
     } else {
       ok.push({ id: node.id, category, name: before });
     }
@@ -88,10 +92,13 @@ export function analyze(nodes = [], convention = {}, opts = {}) {
       // Property name → camelCase (applies to every property type).
       // Parenthetical annotations are stripped first, e.g. "Asterisk (별표)" → "asterisk".
       if (!isValidCase(base, conv.property)) {
-        const after = toCase(stripAnnotations(base), conv.property, dictionary) + suffix;
+        const after = correctSpelling(toCase(stripAnnotations(base), conv.property, dictionary)) + suffix;
         if (after !== pkey) {
           changes.push({ id: node.id, category: "property", kind: "property", propertyKey: pkey, before: pkey, after, reason: `not-${conv.property}` });
         }
+      } else if (correctSpelling(base) !== base) {
+        const after = correctSpelling(base) + suffix;
+        changes.push({ id: node.id, category: "property", kind: "property", propertyKey: pkey, before: pkey, after, reason: "typo" });
       } else {
         ok.push({ id: node.id, category: "property", name: pkey });
       }

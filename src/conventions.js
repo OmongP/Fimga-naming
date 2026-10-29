@@ -110,7 +110,7 @@ export function tokenize(segment, dictionary = DEFAULT_DICTIONARY) {
   const raw = String(segment)
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // fooBar -> foo Bar
     .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2") // URLValue -> URL Value
-    .split(/[\s\-_.]+/)
+    .split(/[^\p{L}\p{N}]+/u) // any symbol is a separator: space - _ . + & … ("+top" → top)
     .flatMap((w) => w.split(/(?<=[a-zA-Z])(?=[0-9])|(?<=[0-9])(?=[a-zA-Z])/)) // v2 boundaries
     .filter(Boolean);
 

@@ -81,7 +81,7 @@
     return words;
   }
   function tokenize(segment, dictionary = DEFAULT_DICTIONARY) {
-    const raw = String(segment).replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(/[\s\-_.]+/).flatMap((w) => w.split(new RegExp("(?<=[a-zA-Z])(?=[0-9])|(?<=[0-9])(?=[a-zA-Z])"))).filter(Boolean);
+    const raw = String(segment).replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(/[^\p{L}\p{N}]+/u).flatMap((w) => w.split(new RegExp("(?<=[a-zA-Z])(?=[0-9])|(?<=[0-9])(?=[a-zA-Z])"))).filter(Boolean);
     return raw.flatMap((w) => {
       const lower = w.toLowerCase();
       if (/^[a-z]+$/.test(lower)) {
@@ -117,6 +117,71 @@
     return NORMALIZABLE_VALUE_RE.test(String(value));
   }
 
+  // src/spelling.js
+  var UI_WORDS = `
+account action active add address agree agreement alert all amount app area arrow asset avatar
+back background badge balance bank banner bar base basic body border bottom box brand breadcrumb
+bullet button calendar call camera caption car card carousel cart category cell center chart chat
+check checkbox chevron chip circle clear close code collapse color column comment complete component
+confirm contact container content contents control count counter cover credit dark dashboard date
+day default delete desc description detail details dialog disabled divider document dot down drawer
+dropdown edit empty end error expand field file fill filled filter first focus footer form frame full
+gallery ghost graph grid group guide handle header heading help hidden history home horizontal hover
+icon image indicator info information inner input insurance item label large last layout left light
+line link list loading loan location lock login logo logout main map medium menu message middle
+mileage mode modal month more name navigation new next notice notification number off option order
+outer outline overlay page pagination panel password payment period phone picker placeholder plus
+point popup preview previous price primary profile progress radio rate rating receipt record refresh
+request result right row sample scroll search secondary section segment select selected selection
+service setting settings shadow sheet side sidebar signup size skeleton slider small snackbar sort
+space spacer stat state statistics status step stepper sub submit success summary switch system tab
+table tag temp terms tertiary test text textarea thumbnail time title toast toggle toolbar tooltip top
+total type upload user value vehicle vertical view warning week widget wrapper year
+`.split(/\s+/).filter(Boolean);
+  var KNOWN = /* @__PURE__ */ new Set([...UI_WORDS, ...DEFAULT_DICTIONARY]);
+  function distance(a, b) {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+    return d[a.length][b.length];
+  }
+  function isKnown(word) {
+    if (KNOWN.has(word)) return true;
+    if (word.endsWith("ies") && KNOWN.has(word.slice(0, -3) + "y")) return true;
+    if (word.endsWith("es") && KNOWN.has(word.slice(0, -2))) return true;
+    return word.endsWith("s") && KNOWN.has(word.slice(0, -1));
+  }
+  function correctWord(word) {
+    if (word.length < 4 || isKnown(word)) return null;
+    const max = word.length >= 8 ? 2 : 1;
+    let best = null;
+    let bestDistance = Infinity;
+    let tie = false;
+    for (const known of KNOWN) {
+      if (Math.abs(known.length - word.length) > max) continue;
+      const dist = distance(word, known);
+      if (dist > max) continue;
+      if (dist < bestDistance) [best, bestDistance, tie] = [known, dist, false];
+      else if (dist === bestDistance) tie = true;
+    }
+    return best && !tie ? best : null;
+  }
+  var WORD_RE = /[A-Z]?[a-z]+|[A-Z]+(?![a-z])/g;
+  function correctSpelling(name) {
+    return String(name).replace(WORD_RE, (w) => {
+      if (w.length > 1 && w === w.toUpperCase()) return w;
+      const fix = correctWord(w.toLowerCase());
+      if (!fix) return w;
+      return w[0] === w[0].toUpperCase() ? fix[0].toUpperCase() + fix.slice(1) : fix;
+    });
+  }
+
   // src/naming.js
   function categoryOf(type) {
     const t = String(type || "").toUpperCase();
@@ -144,7 +209,7 @@
       const supplied = names[node.id];
       if (isDefaultName(before)) {
         if (supplied && supplied.trim()) {
-          const after = toCase(stripAnnotations(supplied), targetCase, dictionary);
+          const after = correctSpelling(toCase(stripAnnotations(supplied), targetCase, dictionary));
           if (after && after !== before) {
             changes.push({ id: node.id, category, kind: "node", before, after, reason: "default-name-replaced" });
           }
@@ -152,10 +217,12 @@
           needsInput.push({ id: node.id, category, before, targetCase });
         }
       } else if (!isValidCase(before, targetCase)) {
-        const after = toCase(stripAnnotations(before), targetCase, dictionary);
+        const after = correctSpelling(toCase(stripAnnotations(before), targetCase, dictionary));
         if (after && after !== before) {
           changes.push({ id: node.id, category, kind: "node", before, after, reason: `not-${targetCase}` });
         }
+      } else if (correctSpelling(before) !== before) {
+        changes.push({ id: node.id, category, kind: "node", before, after: correctSpelling(before), reason: "typo" });
       } else {
         ok.push({ id: node.id, category, name: before });
       }
@@ -166,10 +233,13 @@
         const suffix = suffixOf(pkey);
         const ptype = String((_f = prop.type) != null ? _f : "").toUpperCase();
         if (!isValidCase(base, conv.property)) {
-          const after = toCase(stripAnnotations(base), conv.property, dictionary) + suffix;
+          const after = correctSpelling(toCase(stripAnnotations(base), conv.property, dictionary)) + suffix;
           if (after !== pkey) {
             changes.push({ id: node.id, category: "property", kind: "property", propertyKey: pkey, before: pkey, after, reason: `not-${conv.property}` });
           }
+        } else if (correctSpelling(base) !== base) {
+          const after = correctSpelling(base) + suffix;
+          changes.push({ id: node.id, category: "property", kind: "property", propertyKey: pkey, before: pkey, after, reason: "typo" });
         } else {
           ok.push({ id: node.id, category: "property", name: pkey });
         }
@@ -189,32 +259,50 @@
   }
 
   // src/numbering.js
-  var TRAILING_NUMBER = /^(.*?)([\s_-]*)(\d+)$/;
-  var ROW_TOLERANCE = 30;
-  function readingOrder(nodes, tolerance = ROW_TOLERANCE) {
-    const sorted = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
-    const rows = [];
+  var LINE_TOLERANCE = 30;
+  function readingOrder(nodes, order = "row", tolerance = LINE_TOLERANCE) {
+    const [cross, along] = order === "column" ? ["x", "y"] : ["y", "x"];
+    const sorted = [...nodes].sort((a, b) => a[cross] - b[cross] || a[along] - b[along]);
+    const lines = [];
     for (const node of sorted) {
-      const row = rows[rows.length - 1];
-      if (row && node.y - row.top <= tolerance) row.items.push(node);
-      else rows.push({ top: node.y, items: [node] });
+      const line = lines[lines.length - 1];
+      if (line && node[cross] - line.start <= tolerance) line.items.push(node);
+      else lines.push({ start: node[cross], items: [node] });
     }
-    return rows.flatMap((r) => r.items.sort((a, b) => a.x - b.x));
+    return lines.flatMap((l) => l.items.sort((a, b) => a[along] - b[along]));
   }
-  function renumber(nodes) {
+  function renumber(nodes, { prefix = "", order = "row" } = {}) {
+    return readingOrder(nodes, order).map((node, i) => {
+      var _a;
+      return {
+        id: node.id,
+        before: String((_a = node.name) != null ? _a : ""),
+        after: `${prefix}${i + 1}`
+      };
+    });
+  }
+
+  // src/suggest.js
+  var PASCAL_RE = /^[A-Z][A-Za-z0-9]*$/;
+  var ICON_RE = /icon|(^|[\/_\s-])ic([\/_\s-]|$)/i;
+  function componentWord(name) {
+    if (ICON_RE.test(String(name))) return "Icon";
+    const first = String(name).split("/")[0].trim();
+    if (!first || isDefaultName(first)) return null;
+    const word = toCase(stripAnnotations(first), "PascalCase");
+    return PASCAL_RE.test(word) ? word : null;
+  }
+  function suggestName(s = {}) {
     var _a;
-    const changes = [];
-    let index = 0;
-    for (const node of readingOrder(nodes)) {
-      const before = String((_a = node.name) != null ? _a : "");
-      const match = before.match(TRAILING_NUMBER);
-      if (!match) continue;
-      index += 1;
-      const [, prefix, separator] = match;
-      const after = `${prefix}${separator}${index}`;
-      if (after !== before) changes.push({ id: node.id, before, after });
-    }
-    return changes;
+    if (s.role === "top") return "Header";
+    if (s.role === "bottom") return "SheetBottom";
+    if (s.role === "middle") return "MainContent";
+    const contents = ((_a = s.contents) != null ? _a : []).filter(Boolean);
+    if (!contents.length) return null;
+    const kinds = [...new Set(contents)];
+    if (kinds.length === 1) return contents.length === 1 ? kinds[0] : `${kinds[0]}Group`;
+    if (kinds.length <= 3) return kinds.join("");
+    return "Content";
   }
 
   // figma-plugin/src/figma-ops.js
@@ -252,14 +340,43 @@
       };
     });
   }
+  function screenRole(node) {
+    const screen = node.parent;
+    if (!screen || screen.type !== "FRAME" || !screen.parent || screen.parent.type !== "PAGE") return void 0;
+    const h = screen.height;
+    if (!h) return void 0;
+    if (node.y <= h * 0.15 && node.height <= h * 0.3) return "top";
+    if (node.y + node.height >= h * 0.85 && node.height <= h * 0.35) return "bottom";
+    if (node.height >= h * 0.4) return "middle";
+    return void 0;
+  }
+  var hasImageFill = (n) => Array.isArray(n.fills) && n.fills.some((f) => f.type === "IMAGE" && f.visible !== false);
+  var ICON_TYPES = /* @__PURE__ */ new Set(["VECTOR", "BOOLEAN_OPERATION", "STAR", "POLYGON"]);
+  function contentsOf(node, depth = 0) {
+    if (node.visible === false) return [];
+    if (node.type === "TEXT") return [typeof node.fontSize === "number" && node.fontSize >= 20 ? "Title" : "Text"];
+    if (hasImageFill(node)) return ["Image"];
+    if (node.type === "INSTANCE") return [componentWord(node.name)];
+    if (ICON_TYPES.has(node.type)) return ["Icon"];
+    if (node.type === "LINE") return ["Divider"];
+    if (depth === 0 && "children" in node) return node.children.flatMap((c) => contentsOf(c, 1));
+    return [];
+  }
+  function describeNode(node) {
+    const kids = "children" in node ? node.children : [];
+    return { role: screenRole(node), contents: kids.flatMap((k) => contentsOf(k)).filter(Boolean) };
+  }
   function collectNodes(roots) {
     const out = [];
     const seen = /* @__PURE__ */ new Set();
     const visit = (node) => {
+      var _a;
       if (seen.has(node.id)) return;
       seen.add(node.id);
       if (CHECKED_TYPES.has(node.type) && !isVariantChild(node)) {
-        out.push({ id: node.id, name: node.name, type: node.type, properties: readProperties(node) });
+        const entry = { id: node.id, name: node.name, type: node.type, properties: readProperties(node) };
+        if (isDefaultName(node.name)) entry.suggestion = (_a = suggestName(describeNode(node))) != null ? _a : void 0;
+        out.push(entry);
       }
       if (node.type === "INSTANCE") return;
       if ("children" in node) for (const child of node.children) visit(child);
@@ -309,40 +426,43 @@
     const { roots, scope } = scanRoots();
     lastNodes = collectNodes(roots);
     const { changes, needsInput, ok } = analyze(lastNodes);
+    const suggestions = new Map(lastNodes.map((n) => [n.id, n.suggestion]));
     figma.ui.postMessage({
       type: "result",
       scope,
       nodeCount: lastNodes.length,
       okCount: ok.length,
       changes: changes.map((c) => __spreadProps(__spreadValues({}, c), { key: changeKey(c) })),
-      needsInput
+      needsInput: needsInput.map((n) => __spreadProps(__spreadValues({}, n), { suggestion: suggestions.get(n.id) }))
     });
   }
-  function numberCheck() {
+  var numberOpts = null;
+  function numberCheck(opts = numberOpts || {}) {
+    numberOpts = opts;
     const selection = figma.currentPage.selection;
-    const byParent = /* @__PURE__ */ new Map();
-    for (const node of selection) {
-      const key = node.parent ? node.parent.id : "root";
-      if (!byParent.has(key)) byParent.set(key, []);
-      byParent.get(key).push(node);
-    }
-    lastNumberChanges = [...byParent.values()].flatMap((siblings) => renumber(siblings));
+    const nodes = selection.map((node) => {
+      const box = node.absoluteBoundingBox;
+      return { id: node.id, name: node.name, x: box ? box.x : node.x, y: box ? box.y : node.y };
+    });
+    lastNumberChanges = renumber(nodes, opts);
     figma.ui.postMessage({
       type: "numberResult",
-      scope: selection.length ? `\uC120\uD0DD\uD55C ${selection.length}\uAC1C \uB808\uC774\uC5B4` : "\uB808\uC774\uC5B4\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694",
+      scope: `${selection.length} Frames Selected`,
       changes: lastNumberChanges
     });
   }
+  figma.on("selectionchange", () => {
+    if (numberOpts) numberCheck();
+  });
   figma.ui.onmessage = async (msg) => {
     if (msg.type === "check") {
+      numberOpts = null;
       check();
     } else if (msg.type === "numberCheck") {
-      numberCheck();
+      numberCheck({ prefix: msg.prefix || "", order: msg.order || "row" });
     } else if (msg.type === "numberApply") {
-      const picked = new Set(msg.keys || []);
       let applied = 0;
       for (const c of lastNumberChanges) {
-        if (!picked.has(c.id)) continue;
         const node = await figma.getNodeByIdAsync(c.id);
         if (node) {
           node.name = c.after;

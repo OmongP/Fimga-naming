@@ -1,46 +1,41 @@
-// Renumber sibling layers in reading order (left → right, then the next row down).
-// Numbers start at 1. Layers without a trailing number are left alone.
+// Rename layers to prefix + sequence number, Ultra Renamer style, but starting at 1.
+// The old name is discarded: "Prefix" + 1, 2, 3 … in the chosen order.
 
-// "Item 0" → prefix "Item", separator " ", number "0". Separators (space, _, -) are kept.
-const TRAILING_NUMBER = /^(.*?)([\s_-]*)(\d+)$/;
-
-// Layers whose y differs from the row's first layer by at most this much share a row.
-export const ROW_TOLERANCE = 30;
+// Layers whose position differs by at most this much (px) share a row / column.
+export const LINE_TOLERANCE = 30;
 
 /**
- * Sort nodes in reading order: rows by y (top → bottom), each row left → right.
+ * Sort nodes into lines, then along each line.
+ *   order "row":    rows top → bottom, each row left → right   (0→1 / 2→3)
+ *   order "column": columns left → right, each column top → bottom (0 2 / 1 3)
  *
- * @param {Array} nodes - [{ x, y, ... }] siblings sharing one parent
- * @param {number} [tolerance] - max y difference (px) within one row
+ * @param {Array} nodes - [{ x, y, ... }] in one coordinate space
+ * @param {"row"|"column"} [order]
+ * @param {number} [tolerance] - max cross-axis difference (px) within one line
  */
-export function readingOrder(nodes, tolerance = ROW_TOLERANCE) {
-  const sorted = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
-  const rows = [];
+export function readingOrder(nodes, order = "row", tolerance = LINE_TOLERANCE) {
+  const [cross, along] = order === "column" ? ["x", "y"] : ["y", "x"];
+  const sorted = [...nodes].sort((a, b) => a[cross] - b[cross] || a[along] - b[along]);
+  const lines = [];
   for (const node of sorted) {
-    const row = rows[rows.length - 1];
-    if (row && node.y - row.top <= tolerance) row.items.push(node);
-    else rows.push({ top: node.y, items: [node] });
+    const line = lines[lines.length - 1];
+    if (line && node[cross] - line.start <= tolerance) line.items.push(node);
+    else lines.push({ start: node[cross], items: [node] });
   }
-  return rows.flatMap((r) => r.items.sort((a, b) => a.x - b.x));
+  return lines.flatMap((l) => l.items.sort((a, b) => a[along] - b[along]));
 }
 
 /**
- * Plan renames that number the layers 1, 2, 3 … in reading order.
+ * Plan renames: prefix + 1, 2, 3 … in the given order.
  *
- * @param {Array} nodes - [{ id, name, x, y, width, height }] siblings
- * @returns {Array<{ id, before, after }>} only the layers whose name changes
+ * @param {Array} nodes - [{ id, name, x, y }]
+ * @param {{ prefix?: string, order?: "row"|"column" }} [opts]
+ * @returns {Array<{ id, before, after }>} every node, in numbering order
  */
-export function renumber(nodes) {
-  const changes = [];
-  let index = 0;
-  for (const node of readingOrder(nodes)) {
-    const before = String(node.name ?? "");
-    const match = before.match(TRAILING_NUMBER);
-    if (!match) continue;
-    index += 1;
-    const [, prefix, separator] = match;
-    const after = `${prefix}${separator}${index}`;
-    if (after !== before) changes.push({ id: node.id, before, after });
-  }
-  return changes;
+export function renumber(nodes, { prefix = "", order = "row" } = {}) {
+  return readingOrder(nodes, order).map((node, i) => ({
+    id: node.id,
+    before: String(node.name ?? ""),
+    after: `${prefix}${i + 1}`,
+  }));
 }

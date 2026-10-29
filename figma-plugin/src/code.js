@@ -23,43 +23,49 @@ function check() {
   const { roots, scope } = scanRoots();
   lastNodes = collectNodes(roots);
   const { changes, needsInput, ok } = analyze(lastNodes);
+  const suggestions = new Map(lastNodes.map((n) => [n.id, n.suggestion]));
   figma.ui.postMessage({
     type: "result",
     scope,
     nodeCount: lastNodes.length,
     okCount: ok.length,
     changes: changes.map((c) => ({ ...c, key: changeKey(c) })),
-    needsInput,
+    needsInput: needsInput.map((n) => ({ ...n, suggestion: suggestions.get(n.id) })),
   });
 }
 
-// Number the selected layers 1, 2, 3 … per parent, in reading order.
-function numberCheck() {
+let numberOpts = null; // { prefix, order } while the 번호 매기기 tab is open
+
+// Rename the selected layers to prefix + 1, 2, 3 … (Ultra Renamer style, 1-based).
+// Absolute positions so layers under different parents still order correctly.
+function numberCheck(opts = numberOpts || {}) {
+  numberOpts = opts;
   const selection = figma.currentPage.selection;
-  const byParent = new Map();
-  for (const node of selection) {
-    const key = node.parent ? node.parent.id : "root";
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key).push(node);
-  }
-  lastNumberChanges = [...byParent.values()].flatMap((siblings) => renumber(siblings));
+  const nodes = selection.map((node) => {
+    const box = node.absoluteBoundingBox;
+    return { id: node.id, name: node.name, x: box ? box.x : node.x, y: box ? box.y : node.y };
+  });
+  lastNumberChanges = renumber(nodes, opts);
   figma.ui.postMessage({
     type: "numberResult",
-    scope: selection.length ? `선택한 ${selection.length}개 레이어` : "레이어를 선택해 주세요",
+    scope: `${selection.length} Frames Selected`,
     changes: lastNumberChanges,
   });
 }
 
+figma.on("selectionchange", () => {
+  if (numberOpts) numberCheck();
+});
+
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "check") {
+    numberOpts = null;
     check();
   } else if (msg.type === "numberCheck") {
-    numberCheck();
+    numberCheck({ prefix: msg.prefix || "", order: msg.order || "row" });
   } else if (msg.type === "numberApply") {
-    const picked = new Set(msg.keys || []);
     let applied = 0;
     for (const c of lastNumberChanges) {
-      if (!picked.has(c.id)) continue;
       const node = await figma.getNodeByIdAsync(c.id);
       if (node) {
         node.name = c.after;
