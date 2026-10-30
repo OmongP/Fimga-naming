@@ -12,7 +12,17 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; font: 14px/1.5 -apple-system, "Apple SD Gothic Neo", Pretendard, Inter, system-ui, sans-serif; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
-  header { padding: 20px 20px 12px; }
+  header { position: relative; padding: 20px 20px 12px; }
+  .info { display: flex; padding: 2px; border: 0; border-radius: 50%; background: transparent; color: var(--text-4); cursor: pointer; }
+  .info:hover, .info.on { color: var(--text-3); }
+  .info svg { width: 18px; height: 18px; }
+  .tooltip { display: none; position: absolute; top: 50px; z-index: 10; width: 268px; padding: 12px 14px; border-radius: 7px; background: #202632; box-shadow: 0 6px 20px rgba(0, 0, 0, .16); }
+  html.figma-dark .tooltip { background: #3c3c47; }
+  .tooltip.on { display: block; }
+  .tooltip strong { display: block; margin-bottom: 4px; font-size: 14px; font-weight: 700; color: #fff; }
+  .tooltip p { position: relative; margin: 0; padding-left: 12px; font-size: 13px; line-height: 1.6; color: #b0b8c1; }
+  .tooltip p::before { content: "•"; position: absolute; left: 1px; }
+  .tooltip p + p { margin-top: 4px; }
   header h1 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
   header h1 svg { flex: none; width: 24px; height: 24px; }
   header p { margin: 2px 0 0; font-size: 13px; color: var(--text-3); }
@@ -65,7 +75,11 @@
       </g>
     </svg>
     Figma Naming
+    <button class="info" id="info" aria-label="리네이밍 기준 보기" aria-expanded="false" aria-describedby="rules">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8.25" stroke="currentColor" stroke-width="1.5"/><path d="M7.9 7.7a2.15 2.15 0 1 1 3.1 1.95c-.6.3-1 .8-1 1.45v.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="14" r=".95" fill="currentColor"/></svg>
+    </button>
   </h1>
+  <div class="tooltip" id="rules" role="tooltip"></div>
   <p id="scope">검사 중…</p>
   <nav class="tabs">
     <button class="tab on" data-tab="name">이름 규칙</button>
@@ -184,8 +198,48 @@
 
   const numberCheck = () => send({ type: "numberCheck", prefix, order });
 
+  // Renaming rules for the ⓘ tooltip, per tab. Keep in sync with src/ (conventions, spelling, suggest, numbering).
+  const RULES = {
+    name: ["리네이밍 기준", [
+      "컴포넌트·프레임은 PascalCase, 속성은 camelCase로 바꿔요.",
+      "Variant 값은 첫 글자만 소문자로 바꾸고, Boolean·한글·코드 값은 그대로 둬요.",
+      "괄호 설명과 +, & 같은 기호는 지워요.",
+      "오타로 보이는 영어 단어는 '오타?'로 알려드려요.",
+      "Frame 12처럼 의미 없는 이름은 안에 든 콘텐츠를 보고 이름을 제안해요.",
+    ]],
+    number: ["번호 매기기 기준", [
+      "기존 이름을 지우고 접두어 뒤에 1부터 번호를 붙여요.",
+      "가로 먼저는 왼쪽에서 오른쪽, 세로 먼저는 위에서 아래 순서예요.",
+      "위치 차이가 30px 이내면 같은 줄로 봐요.",
+    ]],
+  };
+  const renderRules = (name) => {
+    const [title, lines] = RULES[name];
+    $("rules").innerHTML = `<strong>${title}</strong>` + lines.map((l) => `<p>${esc(l)}</p>`).join("");
+  };
+
+  // Hover shows the tooltip under the icon; a click pins it until clicked again, Esc, or a click elsewhere.
+  let rulesPinned = false;
+  const showRules = (on) => {
+    $("rules").classList.toggle("on", on);
+    if (on) {
+      // Start under the icon, but keep the whole tooltip inside the panel (measured once visible).
+      const maxLeft = $("info").offsetParent.clientWidth - $("rules").offsetWidth - 12;
+      $("rules").style.left = `${Math.max(12, Math.min($("info").offsetLeft - 12, maxLeft))}px`;
+    }
+    $("info").classList.toggle("on", on);
+    $("info").setAttribute("aria-expanded", String(on));
+  };
+  renderRules("name");
+  $("info").addEventListener("mouseenter", () => showRules(true));
+  $("info").addEventListener("mouseleave", () => { if (!rulesPinned) showRules(false); });
+  $("info").addEventListener("click", (e) => { e.stopPropagation(); rulesPinned = !rulesPinned; showRules(rulesPinned); });
+  document.addEventListener("click", (e) => { if (rulesPinned && !$("rules").contains(e.target)) { rulesPinned = false; showRules(false); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { rulesPinned = false; showRules(false); } });
+
   function setTab(name) {
     tab = name;
+    renderRules(name);
     for (const el of document.querySelectorAll(".tab")) el.classList.toggle("on", el.dataset.tab === name);
     failures = [];
     $("list").innerHTML = "";
