@@ -26,28 +26,34 @@
   header h1 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
   header h1 svg { flex: none; width: 24px; height: 24px; }
   header p { margin: 2px 0 0; font-size: 13px; color: var(--text-3); }
-  .tabs { display: flex; gap: 2px; margin-top: 16px; padding: 3px; border-radius: 7px; background: var(--fill); }
-  .tab { flex: 1; height: 36px; border: 0; border-radius: 7px; background: transparent; color: var(--text-3); font: inherit; font-weight: 600; cursor: pointer; }
-  .tab.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+  .tabs { position: relative; display: flex; gap: 2px; margin-top: 16px; padding: 3px; border-radius: 7px; background: var(--fill); }
+  .tab { position: relative; z-index: 1; flex: 1; height: 32px; border: 0; border-radius: 7px; background: transparent; color: var(--text-3); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: color .25s ease; }
+  .tab.on { color: var(--text); }
+  /* White pill that slides under the active tab (Toss-style segmented control). */
+  .tab-indicator { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 4px); border-radius: 7px; background: var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); transition: transform .3s cubic-bezier(.2, .8, .2, 1); }
+  .tabs[data-active="number"] .tab-indicator { transform: translateX(calc(100% + 2px)); }
+  @keyframes enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  main.enter { animation: enter .25s ease-out; }
+  @media (prefers-reduced-motion: reduce) { .tab, .tab-indicator { transition: none; } main.enter { animation: none; } }
   main { padding: 4px 20px 100px; }
   h2 { margin: 20px 0 6px; font-size: 13px; font-weight: 600; color: var(--text-3); }
   .row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--line); }
   .row:last-child { border-bottom: 0; }
-  .row input[type=checkbox] { appearance: none; flex: none; width: 22px; height: 22px; margin: 0; border-radius: 50%; background: var(--fill-strong); cursor: pointer; }
+  .row input[type=checkbox] { appearance: none; flex: none; width: 18px; height: 18px; margin: 0; border-radius: 50%; background: var(--fill-strong); cursor: pointer; }
   .row input[type=checkbox]:checked { background: var(--point) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M6.5 11.5l3 3 6-6.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
   .names { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .before { color: var(--text-4); text-decoration: line-through; word-break: break-all; }
   .arrow { color: var(--text-4); }
   .after { font-weight: 600; word-break: break-all; }
   .tag { padding: 1px 7px; border-radius: 7px; background: var(--point-soft); color: var(--point-text); font-size: 12px; font-weight: 600; }
-  .field { width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text); font: inherit; font-size: 15px; outline: none; }
+  .field { width: 100%; height: 38px; padding: 0 12px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text); font: inherit; font-size: 13px; outline: none; }
   .field:focus { box-shadow: inset 0 0 0 2px var(--point); }
   .field::placeholder { color: var(--text-4); }
-  .row .field { flex: 1; min-width: 100px; height: 38px; font-size: 14px; }
+  .row .field { flex: 1; min-width: 100px; height: 30px; font-size: 13px; }
   .goto { flex: none; width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--text-3); cursor: pointer; font: inherit; }
   .goto:hover { background: var(--fill); color: var(--text); }
   .orders { display: flex; gap: 8px; }
-  .order { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0 10px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text-3); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .order { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 0 8px; border: 0; border-radius: 7px; background: var(--fill); color: var(--text-3); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
   .order.on { background: var(--point-soft); color: var(--point-text); box-shadow: inset 0 0 0 2px var(--point); }
   .selected-count { margin-top: 20px; font-size: 15px; font-weight: 700; }
   .selected-count b { color: var(--point-text); }
@@ -57,7 +63,7 @@
   footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 20px 20px; background: linear-gradient(to bottom, transparent, var(--bg) 16px); }
   footer .count { margin: 0 0 8px; text-align: center; font-size: 13px; color: var(--text-3); }
   footer .buttons { display: flex; gap: 8px; }
-  button.btn { height: 47px; border: 0; border-radius: 7px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button.btn { height: 38px; border: 0; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
   button.secondary { flex: 1; background: var(--fill); color: var(--text-2); }
   button.primary { flex: 2; background: var(--point); color: var(--on-point); }
   button.primary:active { background: var(--point-press); }
@@ -81,7 +87,8 @@
   </h1>
   <div class="tooltip" id="rules" role="tooltip"></div>
   <p id="scope">검사 중…</p>
-  <nav class="tabs">
+  <nav class="tabs" data-active="name">
+    <span class="tab-indicator" aria-hidden="true"></span>
     <button class="tab on" data-tab="name">이름 규칙</button>
     <button class="tab" data-tab="number">번호 매기기</button>
   </nav>
@@ -110,7 +117,7 @@
 
   // Z (row first) and N (column first) paths through a 2×2 grid.
   const orderIcon = (points) => `
-    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+    <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
       ${[[6, 6], [24, 6], [6, 24], [24, 24]].map(([x, y]) => `<rect x="${x}" y="${y}" width="10" height="10" rx="3" fill="currentColor" opacity=".25"/>`).join("")}
       <polyline points="${points}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
@@ -146,7 +153,19 @@
         </div>`).join("");
     }
     $("list").innerHTML = html;
+    playEnter();
     updateCount();
+  }
+
+  // Fade the list in once, on the first render after switching tabs.
+  let enterPending = false;
+  function playEnter() {
+    if (!enterPending) return;
+    enterPending = false;
+    const list = $("list");
+    list.classList.remove("enter");
+    void list.offsetWidth; // restart the animation
+    list.classList.add("enter");
   }
 
   function renderNumber() {
@@ -171,6 +190,7 @@
       (changes.length
         ? changes.map((c) => changeRow(c, false)).join("")
         : `<div class="empty">캔버스에서 이름을 바꿀 프레임을 선택해 주세요</div>`);
+    playEnter();
     updateCount();
   }
 
@@ -238,8 +258,10 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { rulesPinned = false; showRules(false); } });
 
   function setTab(name) {
+    if (name !== tab) enterPending = true;
     tab = name;
     renderRules(name);
+    document.querySelector(".tabs").dataset.active = name;
     for (const el of document.querySelectorAll(".tab")) el.classList.toggle("on", el.dataset.tab === name);
     failures = [];
     $("list").innerHTML = "";
