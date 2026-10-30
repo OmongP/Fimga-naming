@@ -49,7 +49,7 @@ const conventionSchema = z
     "Overrides for the default convention (component/frame: PascalCase, property: camelCase, variant values: lowerFirst)"
   );
 
-const server = new McpServer({ name: "figma-naming-mcp", version: "1.0.0" });
+const server = new McpServer({ name: "figma-naming-mcp", version: "1.1.0" });
 
 const asText = (obj, text) => ({
   content: [{ type: "text", text: text ?? JSON.stringify(obj, null, 2) }],
